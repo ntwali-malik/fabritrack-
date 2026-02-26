@@ -1,26 +1,31 @@
 package com.example.fabritrack.controller;
 
+import com.example.fabritrack.dto.CreateDepreciationRequest;
+import com.example.fabritrack.dto.UpdateDepreciationRequest;
 import com.example.fabritrack.entity.DepreciationRecord;
-import com.example.fabritrack.repository.AssetRepository;
 import com.example.fabritrack.repository.DepreciationRecordRepository;
+import com.example.fabritrack.service.AuditLogService;
+import com.example.fabritrack.service.DepreciationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/depreciation-records")
 public class DepreciationRecordController {
 
     private final DepreciationRecordRepository repository;
-    private final AssetRepository assetRepository;
+    private final DepreciationService depreciationService;
+    private final AuditLogService auditLogService;
 
     public DepreciationRecordController(DepreciationRecordRepository repository,
-                                        AssetRepository assetRepository) {
+                                        DepreciationService depreciationService,
+                                        AuditLogService auditLogService) {
         this.repository = repository;
-        this.assetRepository = assetRepository;
+        this.depreciationService = depreciationService;
+        this.auditLogService = auditLogService;
     }
 
     @GetMapping
@@ -35,34 +40,62 @@ public class DepreciationRecordController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Create a depreciation record. Only assetId, year, and optional method are required;
+     * depreciation amount and remaining value are calculated automatically.
+     */
     @PostMapping
-    public ResponseEntity<DepreciationRecord> create(@RequestBody DepreciationRecord entity) {
-        if (entity.getAsset() != null && entity.getAsset().getId() != null) {
-            entity.setAsset(assetRepository.getReferenceById(entity.getAsset().getId()));
+    public ResponseEntity<?> create(@RequestBody CreateDepreciationRequest request) {
+        if (request == null || request.assetId() == null || request.year() == null) {
+            return ResponseEntity.badRequest().body("assetId and year are required");
         }
-        DepreciationRecord saved = repository.save(entity);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        try {
+            DepreciationRecord saved = depreciationService.createRecord(
+                    request.assetId(),
+                    request.year(),
+                    request.method()
+            );
+            auditLogService.log("DepreciationRecord", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.CREATE,
+                    "Depreciation record for asset " + request.assetId() + ", year " + request.year(), null);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
+    /**
+     * Update a depreciation record. If year or method is provided, amount and remaining value are recalculated.
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<DepreciationRecord> update(@PathVariable Long id, @RequestBody DepreciationRecord entity) {
-        return repository.findById(id)
-                .map(existing -> {
-                    entity.setId(id);
-                    if (entity.getAsset() != null && entity.getAsset().getId() != null) {
-                        entity.setAsset(assetRepository.getReferenceById(entity.getAsset().getId()));
-                    }
-                    return ResponseEntity.ok(repository.save(entity));
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody UpdateDepreciationRequest request) {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
-        repository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        try {
+            DepreciationRecord saved = depreciationService.updateRecord(
+                    id,
+                    request != null ? request.year() : null,
+                    request != null ? request.method() : null
+            );
+            auditLogService.log("DepreciationRecord", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.UPDATE,
+                    "Depreciation record updated", null);
+            return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            auditLogService.log("DepreciationRecord", id.toString(), com.example.fabritrack.entity.AuditLog.AuditAction.DELETE, "Depreciation record deleted", null);
+            depreciationService.deleteRecord(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

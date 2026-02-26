@@ -26,6 +26,11 @@ public class Asset {
     private BigDecimal purchaseCost;
     private BigDecimal currentValue;
 
+    /** Useful life in years for depreciation (e.g. 5). Used by DepreciationService. */
+    private Integer usefulLifeYears;
+    /** Residual value at end of useful life. Default 0 if null. */
+    private BigDecimal salvageValue;
+
     @Enumerated(EnumType.STRING)
     private AssetStatus status;
 
@@ -80,6 +85,12 @@ public class Asset {
 
     public BigDecimal getCurrentValue() { return currentValue; }
     public void setCurrentValue(BigDecimal currentValue) { this.currentValue = currentValue; }
+
+    public Integer getUsefulLifeYears() { return usefulLifeYears; }
+    public void setUsefulLifeYears(Integer usefulLifeYears) { this.usefulLifeYears = usefulLifeYears; }
+
+    public BigDecimal getSalvageValue() { return salvageValue; }
+    public void setSalvageValue(BigDecimal salvageValue) { this.salvageValue = salvageValue; }
 
     public AssetStatus getStatus() { return status; }
     public void setStatus(AssetStatus status) { this.status = status; }

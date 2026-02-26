@@ -5,6 +5,7 @@ import com.example.fabritrack.entity.Notification;
 import com.example.fabritrack.repository.AssetRepository;
 import com.example.fabritrack.repository.AssetReservationRepository;
 import com.example.fabritrack.repository.UserRepository;
+import com.example.fabritrack.service.AuditLogService;
 import com.example.fabritrack.service.NotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,15 +21,18 @@ public class AssetReservationController {
     private final AssetRepository assetRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public AssetReservationController(AssetReservationRepository repository,
                                       AssetRepository assetRepository,
                                       UserRepository userRepository,
-                                      NotificationService notificationService) {
+                                      NotificationService notificationService,
+                                      AuditLogService auditLogService) {
         this.repository = repository;
         this.assetRepository = assetRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
     }
 
     @GetMapping
@@ -47,6 +51,8 @@ public class AssetReservationController {
     public ResponseEntity<AssetReservation> create(@RequestBody AssetReservation entity) {
         resolveRelations(entity);
         AssetReservation saved = repository.save(entity);
+        auditLogService.log("AssetReservation", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.CREATE,
+                "Reservation created" + (saved.getAsset() != null ? " for " + saved.getAsset().getName() : ""), null);
         String assetName = (saved.getAsset() != null) ? saved.getAsset().getName() : "-";
         String message = String.format(
                 "Your reservation for \"%s\" from %s to %s has been created. Status: %s.",
@@ -66,9 +72,27 @@ public class AssetReservationController {
     public ResponseEntity<AssetReservation> update(@PathVariable Long id, @RequestBody AssetReservation entity) {
         return repository.findById(id)
                 .map(existing -> {
+                    AssetReservation.ReservationStatus previousStatus = existing.getStatus();
                     entity.setId(id);
                     resolveRelations(entity);
-                    return ResponseEntity.ok(repository.save(entity));
+                    AssetReservation saved = repository.save(entity);
+                    auditLogService.log("AssetReservation", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.UPDATE,
+                            "Reservation updated (status: " + (saved.getStatus() != null ? saved.getStatus() : "") + ")", null);
+                    if (entity.getStatus() != null && !entity.getStatus().equals(previousStatus)) {
+                        String assetName = (saved.getAsset() != null) ? saved.getAsset().getName() : "asset";
+                        String message = String.format(
+                                "Your reservation for \"%s\" (%s to %s) has been updated. New status: %s.",
+                                assetName,
+                                saved.getStartDate(),
+                                saved.getEndDate(),
+                                saved.getStatus());
+                        notificationService.notifyUser(
+                                saved.getUser(),
+                                Notification.NotificationType.RESERVATION,
+                                "Reservation status updated",
+                                message);
+                    }
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -78,6 +102,7 @@ public class AssetReservationController {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+        auditLogService.log("AssetReservation", id.toString(), com.example.fabritrack.entity.AuditLog.AuditAction.DELETE, "Reservation deleted", null);
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }

@@ -36,8 +36,8 @@ Creates a user and returns `{ "token": "...", "user": { ... } }`.
 }
 ```
 
-**Role:** `ADMIN` | `MANAGER` | `EMPLOYEE` | `AUDITOR`  
-**Department:** `HR` | `IT` | `FINANCE` | `OPERATIONS` | `MARKETING` | `LEGAL` | `LOGISTICS` | `MANAGEMENT`
+**Role:** `ADMIN` | `IT` | `FINANCE` | `SECURITY`  
+**Department:** `HR` | `IT` | `FINANCE` | `OPERATIONS` | `MARKETING` | `LEGAL` | `LOGISTICS` | `MANAGEMENT` | `SECURITY`
 
 ### POST /api/users/login (no auth)
 Returns `{ "token": "...", "user": { ... } }`.
@@ -48,6 +48,21 @@ Returns `{ "token": "...", "user": { ... } }`.
   "password": "SecurePass123!"
 }
 ```
+
+---
+
+## Role permissions
+
+The system uses four roles. Endpoint access is enforced by the API.
+
+| Role | Permissions |
+|------|-------------|
+| **ADMIN** | Full access: user management, all assets, categories, locations, assignments, reservations, movements, maintenance, attachments, comments, depreciation, audit logs, notifications. |
+| **IT** | Asset lifecycle: categories, locations, assets (CRUD), assignments, reservations, movements, maintenance, attachments, comments. Read own profile. Not: user management, depreciation. |
+| **FINANCE** | Depreciation records (full CRUD). Read-only access to assets (for costs/values). Notifications. Read own profile. Not: user management, assignments, maintenance, audit logs. |
+| **SECURITY** | Audit logs (view and create). Asset movements (view and create). Notifications. Read own profile. Not: user management, asset CRUD, depreciation. |
+
+All authenticated users can use `GET/PUT /api/users/me` and avatar endpoints for their own profile.
 
 ---
 
@@ -151,7 +166,7 @@ Use when you want to create another user via API (optional; you can use signup i
   "password": "AnotherSecure1!",
   "phone": "+1987654321",
   "status": "ACTIVE",
-  "role": "EMPLOYEE",
+  "role": "IT",
   "department": "OPERATIONS"
 }
 ```

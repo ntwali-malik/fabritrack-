@@ -4,6 +4,7 @@ import com.example.fabritrack.entity.MaintenanceRecord;
 import com.example.fabritrack.repository.AssetRepository;
 import com.example.fabritrack.repository.MaintenanceRecordRepository;
 import com.example.fabritrack.repository.UserRepository;
+import com.example.fabritrack.service.AuditLogService;
 import com.example.fabritrack.service.NotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,15 +20,18 @@ public class MaintenanceRecordController {
     private final AssetRepository assetRepository;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final AuditLogService auditLogService;
 
     public MaintenanceRecordController(MaintenanceRecordRepository repository,
                                        AssetRepository assetRepository,
                                        NotificationService notificationService,
-                                       UserRepository userRepository) {
+                                       UserRepository userRepository,
+                                       AuditLogService auditLogService) {
         this.repository = repository;
         this.assetRepository = assetRepository;
         this.notificationService = notificationService;
         this.userRepository = userRepository;
+        this.auditLogService = auditLogService;
     }
 
     @GetMapping
@@ -48,6 +52,8 @@ public class MaintenanceRecordController {
             entity.setAsset(assetRepository.getReferenceById(entity.getAsset().getId()));
         }
         MaintenanceRecord saved = repository.save(entity);
+        auditLogService.log("MaintenanceRecord", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.CREATE,
+                (saved.getType() != null ? saved.getType().toString() : "Maintenance") + " scheduled for asset", null);
         List<com.example.fabritrack.entity.User> activeUsers = userRepository.findByStatus(com.example.fabritrack.entity.User.UserStatus.ACTIVE);
         String assetName = saved.getAsset() != null ? saved.getAsset().getName() : "Unknown asset";
         String title = "Maintenance scheduled";
@@ -65,7 +71,10 @@ public class MaintenanceRecordController {
                     if (entity.getAsset() != null && entity.getAsset().getId() != null) {
                         entity.setAsset(assetRepository.getReferenceById(entity.getAsset().getId()));
                     }
-                    return ResponseEntity.ok(repository.save(entity));
+                    MaintenanceRecord saved = repository.save(entity);
+                    auditLogService.log("MaintenanceRecord", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.UPDATE,
+                            "Maintenance record updated", null);
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -75,6 +84,7 @@ public class MaintenanceRecordController {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+        auditLogService.log("MaintenanceRecord", id.toString(), com.example.fabritrack.entity.AuditLog.AuditAction.DELETE, "Maintenance record deleted", null);
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }

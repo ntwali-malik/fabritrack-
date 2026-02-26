@@ -6,6 +6,7 @@ import com.example.fabritrack.dto.UpdateProfileRequest;
 import com.example.fabritrack.entity.User;
 import com.example.fabritrack.repository.UserRepository;
 import com.example.fabritrack.security.JwtService;
+import com.example.fabritrack.service.AuditLogService;
 import com.example.fabritrack.service.ProfileImageService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -30,13 +31,15 @@ public class UserController {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final ProfileImageService profileImageService;
+    private final AuditLogService auditLogService;
 
     public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
-                          ProfileImageService profileImageService) {
+                          ProfileImageService profileImageService, AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.profileImageService = profileImageService;
+        this.auditLogService = auditLogService;
     }
 
     @GetMapping
@@ -60,6 +63,8 @@ public class UserController {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         User saved = userRepository.save(user);
+        auditLogService.log("User", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.CREATE,
+                "Created user: " + saved.getEmail(), null);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
@@ -79,6 +84,8 @@ public class UserController {
             user.setStatus(User.UserStatus.ACTIVE);
         }
         User saved = userRepository.save(user);
+        auditLogService.log("User", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.LOGIN,
+                "Sign up: " + saved.getEmail(), saved);
         String token = jwtService.generateToken(saved);
         return ResponseEntity.status(HttpStatus.CREATED).body(new LoginResponse(token, saved));
     }
@@ -90,7 +97,11 @@ public class UserController {
         }
         return userRepository.findByEmail(request.email())
                 .filter(user -> passwordEncoder.matches(request.password(), user.getPassword()))
-                .map(user -> ResponseEntity.ok(new LoginResponse(jwtService.generateToken(user), user)))
+                .map(user -> {
+                    auditLogService.log("User", user.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.LOGIN,
+                            "Login: " + user.getEmail(), user);
+                    return ResponseEntity.ok(new LoginResponse(jwtService.generateToken(user), user));
+                })
                 .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
@@ -143,6 +154,8 @@ public class UserController {
                         existing.setPassword(passwordEncoder.encode(request.newPassword()));
                     }
                     User saved = userRepository.save(existing);
+                    auditLogService.log("User", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.UPDATE,
+                            "Updated profile", saved);
                     return ResponseEntity.<User>ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -283,7 +296,10 @@ public class UserController {
                     } else {
                         user.setPassword(existing.getPassword());
                     }
-                    return ResponseEntity.ok(userRepository.save(user));
+                    User saved = userRepository.save(user);
+                    auditLogService.log("User", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.UPDATE,
+                            "Updated user: " + saved.getEmail(), null);
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -293,6 +309,9 @@ public class UserController {
         if (!userRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+        userRepository.findById(id).ifPresent(u ->
+                auditLogService.log("User", id.toString(), com.example.fabritrack.entity.AuditLog.AuditAction.DELETE,
+                        "Deleted user: " + u.getEmail(), null));
         userRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }

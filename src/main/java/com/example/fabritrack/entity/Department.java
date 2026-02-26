@@ -9,5 +9,6 @@ public enum Department {
     MARKETING,
     LEGAL,
     LOGISTICS,
-    MANAGEMENT
+    MANAGEMENT,
+    SECURITY
 }

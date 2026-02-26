@@ -3,6 +3,7 @@ package com.example.fabritrack.controller;
 import com.example.fabritrack.entity.Attachment;
 import com.example.fabritrack.repository.AssetRepository;
 import com.example.fabritrack.repository.AttachmentRepository;
+import com.example.fabritrack.service.AuditLogService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,10 +17,13 @@ public class AttachmentController {
 
     private final AttachmentRepository repository;
     private final AssetRepository assetRepository;
+    private final AuditLogService auditLogService;
 
-    public AttachmentController(AttachmentRepository repository, AssetRepository assetRepository) {
+    public AttachmentController(AttachmentRepository repository, AssetRepository assetRepository,
+                                AuditLogService auditLogService) {
         this.repository = repository;
         this.assetRepository = assetRepository;
+        this.auditLogService = auditLogService;
     }
 
     @GetMapping
@@ -40,6 +44,8 @@ public class AttachmentController {
             entity.setAsset(assetRepository.getReferenceById(entity.getAsset().getId()));
         }
         Attachment saved = repository.save(entity);
+        auditLogService.log("Attachment", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.CREATE,
+                "Attachment: " + (saved.getFileName() != null ? saved.getFileName() : ""), null);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
@@ -52,7 +58,9 @@ public class AttachmentController {
                     if (entity.getAsset() != null && entity.getAsset().getId() != null) {
                         entity.setAsset(assetRepository.getReferenceById(entity.getAsset().getId()));
                     }
-                    return ResponseEntity.ok(repository.save(entity));
+                    Attachment saved = repository.save(entity);
+                    auditLogService.log("Attachment", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.UPDATE, "Attachment updated", null);
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -62,6 +70,9 @@ public class AttachmentController {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+        repository.findById(id).ifPresent(a ->
+                auditLogService.log("Attachment", id.toString(), com.example.fabritrack.entity.AuditLog.AuditAction.DELETE,
+                        "Attachment deleted: " + (a.getFileName() != null ? a.getFileName() : ""), null));
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
