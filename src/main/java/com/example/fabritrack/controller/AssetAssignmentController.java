@@ -4,12 +4,12 @@ import com.example.fabritrack.entity.AssetAssignment;
 import com.example.fabritrack.repository.AssetRepository;
 import com.example.fabritrack.repository.AssetAssignmentRepository;
 import com.example.fabritrack.repository.UserRepository;
+import com.example.fabritrack.service.NotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/asset-assignments")
@@ -18,13 +18,16 @@ public class AssetAssignmentController {
     private final AssetAssignmentRepository repository;
     private final AssetRepository assetRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public AssetAssignmentController(AssetAssignmentRepository repository,
                                      AssetRepository assetRepository,
-                                     UserRepository userRepository) {
+                                     UserRepository userRepository,
+                                     NotificationService notificationService) {
         this.repository = repository;
         this.assetRepository = assetRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @GetMapping
@@ -43,6 +46,13 @@ public class AssetAssignmentController {
     public ResponseEntity<AssetAssignment> create(@RequestBody AssetAssignment entity) {
         resolveRelations(entity);
         AssetAssignment saved = repository.save(entity);
+        notificationService.notifyUser(
+                saved.getUser(),
+                com.example.fabritrack.entity.Notification.NotificationType.ASSIGNMENT,
+                "Asset assigned",
+                String.format("Asset \"%s\" has been assigned to you (assigned date: %s).",
+                        saved.getAsset() != null ? saved.getAsset().getName() : "—",
+                        saved.getAssignedDate()));
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 

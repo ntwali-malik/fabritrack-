@@ -2,31 +2,54 @@ package com.example.fabritrack.controller;
 
 import com.example.fabritrack.entity.Notification;
 import com.example.fabritrack.repository.NotificationRepository;
-import com.example.fabritrack.repository.UserRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * API for viewing notifications and marking them as read. Notifications are
+ * created by the application; this API does not support create/update/delete.
+ */
 @RestController
 @RequestMapping("/api/notifications")
+@CrossOrigin(origins = "*")
 public class NotificationController {
 
     private final NotificationRepository repository;
-    private final UserRepository userRepository;
 
-    public NotificationController(NotificationRepository repository, UserRepository userRepository) {
+    public NotificationController(NotificationRepository repository) {
         this.repository = repository;
-        this.userRepository = userRepository;
     }
 
+    /**
+     * List notifications. If userId is provided, returns that user's notifications;
+     * otherwise returns all (e.g. for admin). Optional filter: unreadOnly.
+     */
     @GetMapping
-    public List<Notification> findAll() {
-        return repository.findAll();
+    public List<Notification> findAll(
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false, defaultValue = "false") boolean unreadOnly) {
+        if (userId != null) {
+            if (unreadOnly) {
+                return repository.findByUser_IdAndIsReadOrderByCreatedAtDesc(userId, false);
+            }
+            return repository.findByUser_IdOrderByCreatedAtDesc(userId);
+        }
+        if (unreadOnly) {
+            return repository.findAllByOrderByCreatedAtDesc().stream()
+                    .filter(n -> Boolean.FALSE.equals(n.getIsRead()))
+                    .toList();
+        }
+        return repository.findAllByOrderByCreatedAtDesc();
     }
 
+    /**
+     * Get a single notification by id.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Notification> findById(@PathVariable Long id) {
         return repository.findById(id)
@@ -34,35 +57,45 @@ public class NotificationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
-    public ResponseEntity<Notification> create(@RequestBody Notification entity) {
-        if (entity.getUser() != null && entity.getUser().getId() != null) {
-            entity.setUser(userRepository.getReferenceById(entity.getUser().getId()));
-        }
-        Notification saved = repository.save(entity);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Notification> update(@PathVariable Long id, @RequestBody Notification entity) {
+    /**
+     * Mark a notification as read. Idempotent.
+     */
+    @PatchMapping("/{id}/read")
+    public ResponseEntity<Notification> markAsRead(@PathVariable Long id) {
         return repository.findById(id)
-                .map(existing -> {
-                    entity.setId(id);
-                    entity.setCreatedAt(existing.getCreatedAt());
-                    if (entity.getUser() != null && entity.getUser().getId() != null) {
-                        entity.setUser(userRepository.getReferenceById(entity.getUser().getId()));
-                    }
-                    return ResponseEntity.ok(repository.save(entity));
+                .map(notification -> {
+                    notification.setIsRead(true);
+                    return ResponseEntity.ok(repository.save(notification));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!repository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+    /**
+     * Mark all notifications for the current user as read.
+     */
+    @PatchMapping("/read-all")
+    public ResponseEntity<Void> markAllAsRead() {
+        UUID currentUserId = getCurrentUserId();
+        if (currentUserId == null) {
+            return ResponseEntity.status(403).build();
         }
-        repository.deleteById(id);
+        List<Notification> unread = repository.findByUser_IdAndIsReadOrderByCreatedAtDesc(currentUserId, false);
+        unread.forEach(n -> {
+            n.setIsRead(true);
+            repository.save(n);
+        });
         return ResponseEntity.noContent().build();
+    }
+
+    private UUID getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(auth.getPrincipal().toString());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

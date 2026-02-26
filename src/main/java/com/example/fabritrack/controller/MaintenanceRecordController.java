@@ -3,12 +3,13 @@ package com.example.fabritrack.controller;
 import com.example.fabritrack.entity.MaintenanceRecord;
 import com.example.fabritrack.repository.AssetRepository;
 import com.example.fabritrack.repository.MaintenanceRecordRepository;
+import com.example.fabritrack.repository.UserRepository;
+import com.example.fabritrack.service.NotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/maintenance-records")
@@ -16,11 +17,17 @@ public class MaintenanceRecordController {
 
     private final MaintenanceRecordRepository repository;
     private final AssetRepository assetRepository;
+    private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     public MaintenanceRecordController(MaintenanceRecordRepository repository,
-                                       AssetRepository assetRepository) {
+                                       AssetRepository assetRepository,
+                                       NotificationService notificationService,
+                                       UserRepository userRepository) {
         this.repository = repository;
         this.assetRepository = assetRepository;
+        this.notificationService = notificationService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -41,6 +48,12 @@ public class MaintenanceRecordController {
             entity.setAsset(assetRepository.getReferenceById(entity.getAsset().getId()));
         }
         MaintenanceRecord saved = repository.save(entity);
+        List<com.example.fabritrack.entity.User> activeUsers = userRepository.findByStatus(com.example.fabritrack.entity.User.UserStatus.ACTIVE);
+        String assetName = saved.getAsset() != null ? saved.getAsset().getName() : "Unknown asset";
+        String title = "Maintenance scheduled";
+        String message = String.format("Maintenance (%s) for \"%s\" has been scheduled for %s.",
+                saved.getType(), assetName, saved.getScheduledDate());
+        notificationService.notifyUsers(activeUsers, com.example.fabritrack.entity.Notification.NotificationType.MAINTENANCE, title, message);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 

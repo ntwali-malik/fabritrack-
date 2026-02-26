@@ -27,6 +27,9 @@ public class User {
 
     private String phone;
 
+    /** Relative path to profile image file (e.g. profile-images/{id}.jpg). Null if no image set. */
+    private String profileImagePath;
+
     @Enumerated(EnumType.STRING)
     private UserStatus status;
 
@@ -69,6 +72,9 @@ public class User {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public String getProfileImagePath() { return profileImagePath; }
+    public void setProfileImagePath(String profileImagePath) { this.profileImagePath = profileImagePath; }
 
     public UserStatus getStatus() { return status; }
     public void setStatus(UserStatus status) { this.status = status; }
