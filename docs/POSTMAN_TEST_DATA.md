@@ -21,8 +21,11 @@ Use the `token` value from the Login or Sign up response.
 
 ## 1. Auth
 
+### Signup and approval workflow
+New users **sign up** with `POST /api/users/signup`. Their account is created with status **PENDING_APPROVAL**; **no token is returned**. They cannot log in until an admin approves them. An admin uses **GET /api/users/pending** to list pending users, then **POST /api/users/{id}/approve** or **POST /api/users/{id}/reject**.
+
 ### POST /api/users/signup (no auth)
-Creates a user and returns `{ "token": "...", "user": { ... } }`.
+Creates a user with status `PENDING_APPROVAL`. Returns `{ "message": "...", "user": { ... } }`. **No token** — user must wait for admin approval before logging in.
 
 ```json
 {
@@ -31,7 +34,7 @@ Creates a user and returns `{ "token": "...", "user": { ... } }`.
   "email": "john.doe@fabritrack.com",
   "password": "SecurePass123!",
   "phone": "+1234567890",
-  "role": "ADMIN",
+  "role": "IT",
   "department": "IT"
 }
 ```
@@ -40,7 +43,9 @@ Creates a user and returns `{ "token": "...", "user": { ... } }`.
 **Department:** `HR` | `IT` | `FINANCE` | `OPERATIONS` | `MARKETING` | `LEGAL` | `LOGISTICS` | `MANAGEMENT` | `SECURITY`
 
 ### POST /api/users/login (no auth)
-Returns `{ "token": "...", "user": { ... } }`.
+Returns `{ "token": "...", "user": { ... } }` when credentials are valid and user is **ACTIVE**.  
+- **403** with `{ "error": "...", "code": "PENDING_APPROVAL" }` if user has not been approved yet.  
+- **403** with `{ "error": "...", "code": "ACCOUNT_NOT_APPROVED" }` if user is INACTIVE or SUSPENDED.
 
 ```json
 {
@@ -48,6 +53,18 @@ Returns `{ "token": "...", "user": { ... } }`.
   "password": "SecurePass123!"
 }
 ```
+
+### Admin: list pending users (requires Admin)
+**GET /api/users/pending**  
+Returns list of users with status `PENDING_APPROVAL`.
+
+### Admin: approve a user (requires Admin)
+**POST /api/users/{id}/approve**  
+Sets user status to `ACTIVE`. User can then log in. Use the user's UUID as `{id}`.
+
+### Admin: reject a pending user (requires Admin)
+**POST /api/users/{id}/reject**  
+Sets user status to `INACTIVE`. User cannot log in.
 
 ---
 
@@ -323,7 +340,35 @@ Use an existing asset UUID.
 }
 ```
 
-**Type:** `ASSIGNMENT` | `MAINTENANCE` | `WARRANTY_EXPIRY` | `RESERVATION` | `AUDIT` | `GENERAL`
+**Type:** `ASSIGNMENT` | `MAINTENANCE` | `WARRANTY_EXPIRY` | `RESERVATION` | `AUDIT` | `GENERAL` | `THEFT_RISK`
+
+---
+
+## 15. Theft & Anomaly Alerts (AI-Powered Detection)
+
+Rule-based detection runs on every asset movement. When a rule triggers (e.g. after-hours move, high-value asset moved by non-ADMIN/SECURITY, or same asset moved >5 times in 24h), THEFT_RISK notifications are sent to ADMIN and SECURITY, and an anomaly alert is stored.
+
+### GET /api/anomaly-alerts
+List anomaly alerts (newest first). **Roles:** ADMIN, SECURITY.
+
+| Query param | Description |
+|-------------|-------------|
+| `assetId`  | UUID – filter by asset |
+| `severity` | `HIGH` \| `MEDIUM` \| `LOW` |
+| `page`, `size` | Pagination (default size 20) |
+
+Response: Spring Page with `content` array of `AnomalyAlertResponse` (id, reason, severity, createdAt, assetId, assetTag, assetName, assetValueAtAlert, fromLocation, toLocation, performedByEmail, movementId).
+
+### GET /api/anomaly-alerts/{id}
+Get one alert by id.
+
+### Configuration (application.properties)
+- `app.anomaly.allowed-hour-start` = 6 (movements before 06:00 trigger)
+- `app.anomaly.allowed-hour-end` = 22 (movements after 22:59 trigger)
+- `app.anomaly.high-value-threshold` = 10000 (asset value >= this moved by non-ADMIN/SECURITY triggers)
+- `app.anomaly.max-movements-per-asset-24h` = 5 (same asset moved more than this in 24h triggers)
+
+Dashboard: open **http://localhost:8080/** and paste a JWT (Admin or Security) to load alerts.
 
 ---
 

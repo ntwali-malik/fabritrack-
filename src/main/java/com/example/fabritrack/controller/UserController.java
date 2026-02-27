@@ -2,6 +2,9 @@ package com.example.fabritrack.controller;
 
 import com.example.fabritrack.dto.LoginRequest;
 import com.example.fabritrack.dto.LoginResponse;
+import com.example.fabritrack.dto.SignupResponse;
+import com.example.fabritrack.dto.ErrorResponse;
+import com.example.fabritrack.dto.ApproveUserRequest;
 import com.example.fabritrack.dto.UpdateProfileRequest;
 import com.example.fabritrack.entity.User;
 import com.example.fabritrack.repository.UserRepository;
@@ -47,6 +50,12 @@ public class UserController {
         return userRepository.findAll();
     }
 
+    /** List users pending admin approval (Admin only). */
+    @GetMapping("/pending")
+    public List<User> findPendingApproval() {
+        return userRepository.findByStatus(User.UserStatus.PENDING_APPROVAL);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<User> findById(@PathVariable UUID id) {
         return userRepository.findById(id)
@@ -69,7 +78,7 @@ public class UserController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<LoginResponse> signUp(@RequestBody User user) {
+    public ResponseEntity<?> signUp(@RequestBody User user) {
         if (user.getEmail() == null || user.getEmail().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
@@ -80,27 +89,45 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        if (user.getStatus() == null) {
-            user.setStatus(User.UserStatus.ACTIVE);
+        user.setStatus(User.UserStatus.PENDING_APPROVAL);
+        if (user.getRole() == null) {
+            user.setRole(com.example.fabritrack.entity.Role.IT);
+        }
+        if (user.getDepartment() == null) {
+            user.setDepartment(com.example.fabritrack.entity.Department.OPERATIONS);
+        }
+        if (user.getFirstName() == null || user.getFirstName().isBlank()) {
+            user.setFirstName(user.getEmail().split("@")[0]);
+        }
+        if (user.getLastName() == null || user.getLastName().isBlank()) {
+            user.setLastName(".");
         }
         User saved = userRepository.save(user);
-        auditLogService.log("User", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.LOGIN,
-                "Sign up: " + saved.getEmail(), saved);
-        String token = jwtService.generateToken(saved);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new LoginResponse(token, saved));
+        auditLogService.log("User", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.CREATE,
+                "Sign up (pending approval): " + saved.getEmail(), null);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new SignupResponse(SignupResponse.MESSAGE, saved));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         if (request.email() == null || request.password() == null) {
             return ResponseEntity.badRequest().build();
         }
         return userRepository.findByEmail(request.email())
                 .filter(user -> passwordEncoder.matches(request.password(), user.getPassword()))
                 .map(user -> {
+                    if (user.getStatus() == User.UserStatus.PENDING_APPROVAL) {
+                        return ResponseEntity.<ErrorResponse>status(HttpStatus.FORBIDDEN)
+                                .body(ErrorResponse.forStatus(user.getStatus().name()));
+                    }
+                    if (user.getStatus() == User.UserStatus.INACTIVE || user.getStatus() == User.UserStatus.SUSPENDED) {
+                        return ResponseEntity.<ErrorResponse>status(HttpStatus.FORBIDDEN)
+                                .body(ErrorResponse.forStatus(user.getStatus().name()));
+                    }
                     auditLogService.log("User", user.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.LOGIN,
                             "Login: " + user.getEmail(), user);
-                    return ResponseEntity.ok(new LoginResponse(jwtService.generateToken(user), user));
+                    return ResponseEntity.<LoginResponse>ok(new LoginResponse(jwtService.generateToken(user), user));
                 })
                 .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
@@ -314,5 +341,42 @@ public class UserController {
                         "Deleted user: " + u.getEmail(), null));
         userRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /** Approve a user who signed up (sets status to ACTIVE). Admin can set role in request body. Admin only. */
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<User> approve(@PathVariable UUID id, @RequestBody(required = false) ApproveUserRequest request) {
+        return userRepository.findById(id)
+                .filter(u -> u.getStatus() == User.UserStatus.PENDING_APPROVAL)
+                .map(user -> {
+                    user.setStatus(User.UserStatus.ACTIVE);
+                    if (request != null && request.role() != null && !request.role().isBlank()) {
+                        try {
+                            user.setRole(com.example.fabritrack.entity.Role.valueOf(request.role().trim().toUpperCase()));
+                        } catch (IllegalArgumentException ignored) {
+                            // keep existing role if invalid
+                        }
+                    }
+                    User saved = userRepository.save(user);
+                    auditLogService.log("User", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.UPDATE,
+                            "Approved user: " + saved.getEmail() + (saved.getRole() != null ? " (role: " + saved.getRole() + ")" : ""), null);
+                    return ResponseEntity.<User>ok(saved);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Reject a pending user (sets status to INACTIVE). Admin only. */
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<User> reject(@PathVariable UUID id) {
+        return userRepository.findById(id)
+                .filter(u -> u.getStatus() == User.UserStatus.PENDING_APPROVAL)
+                .map(user -> {
+                    user.setStatus(User.UserStatus.INACTIVE);
+                    User saved = userRepository.save(user);
+                    auditLogService.log("User", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.UPDATE,
+                            "Rejected user (pending approval): " + saved.getEmail(), null);
+                    return ResponseEntity.<User>ok(saved);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }

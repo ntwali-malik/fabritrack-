@@ -1,6 +1,9 @@
 package com.example.fabritrack.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
 import java.time.LocalDate;
 
 @Entity
@@ -25,6 +28,7 @@ public class AssetAssignment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     private User user;
 
     public enum AssignmentStatus {

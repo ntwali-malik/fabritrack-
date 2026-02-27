@@ -52,7 +52,12 @@ public class AuditLogService {
         log(entityName, entityId, action, details, null);
     }
 
-    private User getCurrentUser() {
+    /** Returns the currently authenticated user, or null. Used e.g. by anomaly detection. */
+    public User getCurrentUser() {
+        return getCurrentUserInternal();
+    }
+
+    private User getCurrentUserInternal() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
             return null;

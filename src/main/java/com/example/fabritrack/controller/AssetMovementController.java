@@ -4,6 +4,7 @@ import com.example.fabritrack.entity.AssetMovement;
 import com.example.fabritrack.repository.AssetMovementRepository;
 import com.example.fabritrack.repository.AssetRepository;
 import com.example.fabritrack.service.AuditLogService;
+import com.example.fabritrack.service.AnomalyDetectionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,12 +19,15 @@ public class AssetMovementController {
     private final AssetMovementRepository repository;
     private final AssetRepository assetRepository;
     private final AuditLogService auditLogService;
+    private final AnomalyDetectionService anomalyDetectionService;
 
     public AssetMovementController(AssetMovementRepository repository, AssetRepository assetRepository,
-                                   AuditLogService auditLogService) {
+                                   AuditLogService auditLogService,
+                                   AnomalyDetectionService anomalyDetectionService) {
         this.repository = repository;
         this.assetRepository = assetRepository;
         this.auditLogService = auditLogService;
+        this.anomalyDetectionService = anomalyDetectionService;
     }
 
     @GetMapping
@@ -48,6 +52,7 @@ public class AssetMovementController {
                 (entity.getFromLocationName() != null && entity.getToLocationName() != null)
                         ? entity.getFromLocationName() + " → " + entity.getToLocationName()
                         : (entity.getReason() != null ? entity.getReason() : "Asset moved"), null);
+        anomalyDetectionService.evaluateMovement(saved, auditLogService.getCurrentUser());
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
@@ -62,6 +67,7 @@ public class AssetMovementController {
                     AssetMovement saved = repository.save(entity);
                     auditLogService.log("AssetMovement", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.MOVE,
                             "Updated movement", null);
+                    anomalyDetectionService.evaluateMovement(saved, auditLogService.getCurrentUser());
                     return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());

@@ -50,7 +50,10 @@ public class User {
     }
 
     public enum UserStatus {
-        ACTIVE, INACTIVE, SUSPENDED
+        PENDING_APPROVAL,
+        ACTIVE,
+        INACTIVE,
+        SUSPENDED
     }
 
     // Getters and Setters

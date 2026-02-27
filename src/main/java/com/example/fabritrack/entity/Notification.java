@@ -1,6 +1,9 @@
 package com.example.fabritrack.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -28,6 +31,7 @@ public class Notification {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     private User user;
 
     @PrePersist
@@ -36,7 +40,7 @@ public class Notification {
     }
 
     public enum NotificationType {
-        ASSIGNMENT, MAINTENANCE, WARRANTY_EXPIRY, RESERVATION, AUDIT, GENERAL
+        ASSIGNMENT, MAINTENANCE, WARRANTY_EXPIRY, RESERVATION, AUDIT, GENERAL, THEFT_RISK
     }
 
     // Getters and Setters

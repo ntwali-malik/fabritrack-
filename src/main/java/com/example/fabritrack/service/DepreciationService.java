@@ -42,7 +42,6 @@ public class DepreciationService {
         }
         return asset.getPurchaseCost();
     }
-
     /**
      * Create a depreciation record for the given asset and year. Amount and remaining value are calculated.
      * Updates asset.currentValue to the new remaining value.

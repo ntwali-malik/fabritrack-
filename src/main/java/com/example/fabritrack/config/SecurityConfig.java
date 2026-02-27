@@ -55,6 +55,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
                 // Asset categories & locations – Admin, IT
@@ -85,6 +86,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/audit-logs", "/api/audit-logs/**").hasAnyRole("ADMIN", "SECURITY")
                 // Notifications – all roles
                 .requestMatchers("/api/notifications", "/api/notifications/**").hasAnyRole("ADMIN", "IT", "FINANCE", "SECURITY")
+                // Anomaly / theft-risk alerts – Admin, Security (asset recovery)
+                .requestMatchers("/api/anomaly-alerts", "/api/anomaly-alerts/**").hasAnyRole("ADMIN", "SECURITY")
                 // Any other API – Admin only
                 .requestMatchers("/api/**").hasRole("ADMIN")
                 .anyRequest().permitAll())
