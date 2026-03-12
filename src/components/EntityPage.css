@@ -1,0 +1,377 @@
+/* Shared entity CRUD page – list, toolbar, modal and form */
+
+.entity-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.entity-toolbar-desc {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.entity-add-btn {
+  padding: 10px 20px;
+  background: #1a56ff;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.entity-add-btn:hover {
+  background: #1445d4;
+}
+
+.report-btn {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.report-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.entity-add-btn.entity-btn--secondary {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+.entity-add-btn.entity-btn--secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.entity-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+
+.entity-success {
+  color: #0d9668;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+
+.entity-loading {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.entity-empty {
+  padding: 32px;
+  text-align: center;
+  color: #64748b;
+}
+
+.entity-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.entity-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.entity-modal {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.entity-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.entity-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.entity-modal-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.entity-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.entity-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.entity-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 20px;
+}
+
+.entity-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.entity-field--full {
+  grid-column: 1 / -1;
+}
+
+.entity-field label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.entity-field-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.entity-field input.entity-readonly,
+.entity-field input[readonly] {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: default;
+}
+
+.entity-field input,
+.entity-field select,
+.entity-field textarea {
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-family: 'DM Sans', sans-serif;
+  color: #0f172a;
+  transition: border-color 0.15s;
+}
+
+.entity-field textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.entity-field input:focus,
+.entity-field select:focus,
+.entity-field textarea:focus {
+  outline: none;
+  border-color: #1a56ff;
+  box-shadow: 0 0 0 3px rgba(26, 86, 255, 0.15);
+}
+
+.entity-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.entity-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.entity-btn--secondary {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+}
+
+.entity-btn--secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.entity-btn--primary {
+  border: none;
+  background: #1a56ff;
+  color: #fff;
+}
+
+.entity-btn--primary:hover {
+  background: #1445d4;
+}
+
+.entity-btn--danger {
+  border: none;
+  background: #ef4444;
+  color: #fff;
+}
+
+.entity-btn--danger:hover {
+  background: #dc2626;
+}
+
+/* Delete confirmation modal (Yes / No) – shared by all CRUD pages */
+.entity-delete-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 320;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: entityDeleteFadeIn 0.2s ease;
+}
+
+@keyframes entityDeleteFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.entity-delete-modal {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+  max-width: 400px;
+  width: 100%;
+  overflow: hidden;
+  animation: entityDeleteSlideIn 0.25s ease;
+}
+
+@keyframes entityDeleteSlideIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.entity-delete-modal-inner {
+  padding: 28px 24px 24px;
+  text-align: center;
+}
+
+.entity-delete-modal-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.entity-delete-modal-icon svg {
+  flex-shrink: 0;
+}
+
+.entity-delete-modal-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.entity-delete-modal-message {
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 24px;
+  padding: 0 8px;
+}
+
+.entity-delete-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.entity-delete-btn-no,
+.entity-delete-btn-yes {
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.entity-delete-btn-no {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.entity-delete-btn-no:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.entity-delete-btn-yes {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+}
+
+.entity-delete-btn-yes:hover {
+  background: #b91c1c;
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
+}

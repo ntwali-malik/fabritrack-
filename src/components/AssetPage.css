@@ -1,0 +1,737 @@
+/* Asset page – list, toolbar, modal and form */
+
+.asset-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.asset-add-btn {
+  padding: 10px 20px;
+  background: #1a56ff;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.asset-add-btn:hover {
+  background: #1445d4;
+}
+
+.asset-status-badge {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.asset-status-badge.AVAILABLE {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.asset-status-badge.IN_USE {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.asset-status-badge.UNDER_MAINTENANCE {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.asset-status-badge.DISPOSED {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.asset-status-badge.RESERVED {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* Status info icon + hover popover (table and form) */
+.asset-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.asset-status-info-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.asset-status-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #64748b;
+  background: #f1f5f9;
+  cursor: help;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.asset-status-info-icon:hover {
+  color: #1e40af;
+  background: #dbeafe;
+}
+
+.asset-status-popover {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 6px;
+  z-index: 100;
+  min-width: 220px;
+  max-width: 280px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 4px 10px -4px rgba(0, 0, 0, 0.08);
+}
+
+.asset-status-popover::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-left: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+  transform: rotate(45deg);
+}
+
+.asset-status-popover-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.asset-status-popover-desc {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #475569;
+  margin: 0;
+}
+
+.asset-field-label-with-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.asset-status-info-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.asset-status-popover--form {
+  left: 0;
+  top: 100%;
+  margin-top: 8px;
+}
+
+/* Modal */
+.asset-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.asset-modal {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.asset-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.asset-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.asset-modal-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.asset-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.asset-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.asset-form-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.asset-form-section {
+  padding: 20px 0 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.asset-form-section:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.asset-form-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin: 0 0 16px 0;
+  padding: 0;
+}
+
+.asset-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
+}
+
+.asset-form-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+.asset-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.asset-field label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.asset-field input,
+.asset-field select,
+.asset-field textarea {
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-family: 'DM Sans', sans-serif;
+  color: #0f172a;
+  transition: border-color 0.15s;
+}
+
+.asset-field input:focus,
+.asset-field select:focus,
+.asset-field textarea:focus {
+  outline: none;
+  border-color: #1a56ff;
+  box-shadow: 0 0 0 3px rgba(26, 86, 255, 0.15);
+}
+
+.asset-field textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.asset-field-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.asset-supplier-section {
+  margin-top: 4px;
+}
+
+.asset-supplier-heading {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.asset-supplier-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px 16px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 520px) {
+  .asset-supplier-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.asset-field-readonly,
+.asset-field input:read-only.asset-field-readonly,
+.asset-field input[readonly].asset-field-readonly,
+.asset-field input:disabled.asset-field-readonly {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: default;
+  border-color: #e2e8f0;
+}
+
+.asset-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.asset-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.asset-btn--secondary {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+}
+
+.asset-btn--secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.asset-btn--primary {
+  border: none;
+  background: #1a56ff;
+  color: #fff;
+}
+
+.asset-btn--primary:hover {
+  background: #1445d4;
+}
+
+.asset-btn--danger {
+  border: none;
+  background: #ef4444;
+  color: #fff;
+}
+
+.asset-btn--danger:hover {
+  background: #dc2626;
+}
+
+.asset-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+
+.asset-loading {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.asset-empty {
+  padding: 32px;
+  text-align: center;
+  color: #64748b;
+}
+
+/* Asset QR code – auto-generated, contains full asset data */
+.asset-qr-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.asset-qr-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 12px;
+}
+
+.asset-qr-wrap {
+  display: inline-flex;
+  padding: 12px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.asset-qr-wrap--large {
+  padding: 16px;
+}
+
+.asset-qr-modal-overlay {
+  z-index: 310;
+}
+
+/* Delete confirmation modal (Yes / No, same style as logout) */
+.asset-delete-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 320;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: assetDeleteFadeIn 0.2s ease;
+}
+
+@keyframes assetDeleteFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.asset-delete-modal {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+  max-width: 400px;
+  width: 100%;
+  overflow: hidden;
+  animation: assetDeleteSlideIn 0.25s ease;
+}
+
+@keyframes assetDeleteSlideIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.asset-delete-modal-inner {
+  padding: 28px 24px 24px;
+  text-align: center;
+}
+
+.asset-delete-modal-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asset-delete-modal-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.asset-delete-modal-message {
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 24px;
+  padding: 0 8px;
+}
+
+.asset-delete-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.asset-delete-btn-no,
+.asset-delete-btn-yes {
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.asset-delete-btn-no {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.asset-delete-btn-no:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.asset-delete-btn-yes {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+}
+
+.asset-delete-btn-yes:hover {
+  background: #b91c1c;
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
+}
+
+.asset-qr-modal {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 320px;
+  overflow: hidden;
+}
+
+.asset-qr-modal--with-preview {
+  max-width: 440px;
+}
+
+.asset-qr-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.asset-qr-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.asset-btn--print {
+  padding: 8px 16px;
+  font-size: 0.8125rem;
+}
+
+.asset-qr-modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-qr-modal-body {
+  padding: 24px;
+  text-align: center;
+}
+
+.asset-qr-hint {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+.asset-qr-modal--with-preview .asset-qr-modal-body {
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.asset-qr-preview-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #475569;
+  margin: 20px 0 10px;
+}
+
+.asset-qr-preview-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.asset-qr-paste-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-family: monospace;
+  color: #0f172a;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.asset-qr-paste-input::placeholder {
+  color: #64748b;
+}
+
+.asset-qr-mobile-tip {
+  font-size: 0.8rem;
+  color: #334155;
+  background: #e8f3fb;
+  border: 1px solid rgba(26, 143, 209, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.asset-qr-mobile-link {
+  color: #1a8fd1;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.asset-qr-mobile-link:hover {
+  text-decoration: underline;
+}
+
+.asset-qr-mobile-placeholder {
+  font-family: monospace;
+  color: #64748b;
+}
+
+.asset-qr-hint--ok {
+  margin-bottom: 8px;
+  color: #0d9668;
+}
+
+.asset-qr-print-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+/* Print-only: hidden on screen */
+.asset-qr-print-title {
+  display: none;
+}
+
+/* Print: Asset Name on top, then QR only. Turn off "Headers and footers" in print dialog to hide browser URL/title. */
+@media print {
+  @page {
+    size: auto;
+    margin: 16mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .asset-qr-modal-overlay,
+  .asset-qr-modal-overlay .asset-qr-modal,
+  .asset-qr-modal-overlay .asset-qr-modal-body,
+  .asset-qr-modal-overlay .asset-qr-print-title,
+  .asset-qr-modal-overlay .asset-qr-wrap--large,
+  .asset-qr-modal-overlay .asset-qr-wrap--large * {
+    visibility: visible;
+  }
+  .asset-qr-print-title {
+    display: block !important;
+    font-size: 18pt;
+    font-weight: 700;
+    color: #000;
+    text-align: center;
+    margin: 0 0 16px 0;
+    padding: 0;
+  }
+  .asset-qr-modal-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    background: #fff !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 99999;
+  }
+  .asset-qr-modal-overlay .asset-qr-modal {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: none !important;
+  }
+  .asset-qr-modal-overlay .asset-qr-modal-header,
+  .asset-qr-modal-overlay .asset-qr-mobile-tip,
+  .asset-qr-modal-overlay .asset-qr-hint,
+  .asset-qr-modal-overlay .asset-qr-print-hint,
+  .asset-qr-modal-overlay .asset-qr-preview-label,
+  .asset-qr-modal-overlay .asset-qr-preview-wrap {
+    display: none !important;
+  }
+  .asset-qr-modal-overlay .asset-qr-modal-body {
+    padding: 0 !important;
+    border: none !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .asset-qr-modal-overlay .asset-qr-wrap--large {
+    padding: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+}
