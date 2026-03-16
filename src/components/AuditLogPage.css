@@ -16,7 +16,7 @@
   height: 38px;
   padding: 0 12px;
   font-size: 0.875rem;
-  font-family: inherit;
+  font-family: var(--fb, 'DM Sans', sans-serif);
   border: 1px solid var(--b1, rgba(26, 143, 209, 0.2));
   border-radius: 8px;
   background: var(--s2, #fff);
@@ -149,7 +149,7 @@
 .audit-page-size-select {
   padding: 6px 10px;
   font-size: 0.8rem;
-  font-family: inherit;
+  font-family: var(--fb, 'DM Sans', sans-serif);
   border: 1px solid var(--b2, rgba(26, 143, 209, 0.25));
   border-radius: 8px;
   background: var(--s2, #fff);
@@ -173,7 +173,7 @@
   padding: 8px 14px;
   font-size: 0.85rem;
   font-weight: 600;
-  font-family: inherit;
+  font-family: var(--fb, 'DM Sans', sans-serif);
   border: 1px solid var(--b2, rgba(26, 143, 209, 0.25));
   background: var(--s2, #fff);
   color: var(--text, #0d2d45);

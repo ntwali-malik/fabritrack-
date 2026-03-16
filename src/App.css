@@ -1,4 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+:root {
+  --blue:       #1a8fd1;
+  --blue-lt:    #3db8f5;
+  --blue-dk:    #0e6fa8;
+  --blue-deep:  #0d5f96;
+  --blue-deeper:#0a4a78;
+
+  --bg:         #f1f5f9;
+  --surface:    #ffffff;
+  --surface2:   #f8fafc;
+  --border:     #dde6ef;
+  --border-lt:  #eaf1f7;
+
+  --ink:        #0c1f2e;
+  --ink2:       #3a566b;
+  --ink3:       #6b8699;
+  --ink4:       #a0b8c5;
+
+  --success:    #0b8f63;
+  --danger:     #c0392b;
+
+  --fd: 'Syne', sans-serif;
+  --fb: 'DM Sans', sans-serif;
+}
+
+body {
+  font-family: var(--fb);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
 .App {
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--fb);
 }

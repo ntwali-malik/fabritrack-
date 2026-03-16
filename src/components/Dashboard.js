@@ -50,8 +50,8 @@ const css = `
   --sb-bg:      #0b2236;
   --sb-bg2:     #0b2236;
   --sb-line:    rgba(255,255,255,0.07);
-  --sb-text:    rgba(255,255,255,0.52);
-  --sb-hi:      rgba(255,255,255,0.92);
+  --sb-text:    rgba(255,255,255,0.94);
+  --sb-hi:      rgba(255,255,255,0.98);
   --sb-hover:   rgba(255,255,255,0.055);
   --sb-active:  rgba(26,143,209,0.16);
   --sw:         232px;
@@ -137,7 +137,7 @@ body{
 .sb-brand-sub{
   font-family:var(--fb);
   font-size:.6rem;font-weight:400;
-  color:rgba(255,255,255,.28);
+  color:rgba(255,255,255,.78);
   text-transform:uppercase;letter-spacing:.09em;margin-top:2px
 }
 
@@ -163,10 +163,10 @@ body{
   font-family:var(--fb);
   font-size:.575rem;font-weight:600;
   text-transform:uppercase;letter-spacing:.14em;
-  color:rgba(255,255,255,.28)
+  color:rgba(255,255,255,.82)
 }
 .sb-group-chevron{
-  color:rgba(255,255,255,.22);
+  color:rgba(255,255,255,.78);
   transition:transform .22s ease;
   display:flex;align-items:center
 }
@@ -235,7 +235,7 @@ body{
   color:rgba(255,255,255,.88);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
-.sb-user-role{font-size:.64rem;color:rgba(255,255,255,.32);margin-top:1px}
+.sb-user-role{font-size:.64rem;color:rgba(255,255,255,.86);margin-top:1px}
 .sb-user-cog{
   color:rgba(255,255,255,.24);flex-shrink:0;
   transition:color .15s,transform .35s
@@ -984,7 +984,9 @@ export default function Dashboard({ user, onLogout }) {
   const fullName = [du.firstName,du.lastName].filter(Boolean).join(" ")||"Admin";
   const roleLabel = du.role ? String(du.role).replace(/_/g," ").toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()) : "Administrator";
   const deptLabel = du.department ? String(du.department).replace(/_/g," ").toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()) : null;
-  const defAvatar = "https://i.pravatar.cc/36?img=47";
+  const defAvatar = du?.email
+    ? `https://i.pravatar.cc/80?u=${encodeURIComponent(du.email)}`
+    : "https://i.pravatar.cc/80?u=fabritrack-default";
   const perms    = getEffectivePermissions(user||du);
   const navItems = useMemo(()=>getNavItemsForPermissions(perms),[perms]);
   const navGroups = useMemo(()=>NAV_GROUPS.map(g=>({label:g.label,items:navItems.filter(n=>g.ids.includes(n.id))})).filter(g=>g.items.length>0),[navItems]);

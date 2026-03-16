@@ -1,4 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 import {
   getDepreciationRecords,
   createDepreciationRecord,
@@ -22,10 +34,10 @@ const emptyForm = () => ({
   assetId: "",
 });
 
-const IconGear = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+const IconEdit = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
 const IconClose = () => (
@@ -142,8 +154,271 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
 
   const filteredList = filterListByQuery(list, searchQuery, ["year", "method", (r) => assetLabel(r.asset)]);
 
+  const currency = (v) =>
+    typeof v === "number"
+      ? v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : "—";
+
+  const analytics = useMemo(() => {
+    if (!Array.isArray(list) || list.length === 0) {
+      return {
+        totalRecords: 0,
+        totalAssets: 0,
+        totalDep: 0,
+        totalDepThisYear: 0,
+        totalRemaining: 0,
+        yearData: [],
+        methodData: [],
+      };
+    }
+
+    const currentYear = new Date().getFullYear();
+    const assetIds = new Set();
+    const byYear = new Map();
+    const byMethod = new Map();
+
+    let totalDep = 0;
+    let totalDepThisYear = 0;
+    let totalRemaining = 0;
+
+    for (const r of list) {
+      const dep =
+        r.depreciationAmount != null
+          ? Number(r.depreciationAmount) || 0
+          : r.amount != null
+          ? Number(r.amount) || 0
+          : 0;
+      const rem =
+        r.remainingValue != null ? Number(r.remainingValue) || 0 : 0;
+
+      totalDep += dep;
+      totalRemaining += rem;
+
+      if (r.year === currentYear) {
+        totalDepThisYear += dep;
+      }
+
+      if (r.asset?.id != null) {
+        assetIds.add(r.asset.id);
+      }
+
+      if (r.year != null) {
+        const y = String(r.year);
+        byYear.set(y, (byYear.get(y) || 0) + dep);
+      }
+
+      const methodKey = r.method || "Unknown";
+      byMethod.set(methodKey, (byMethod.get(methodKey) || 0) + dep);
+    }
+
+    const yearData = Array.from(byYear.entries())
+      .map(([year, amount]) => ({ year, amount }))
+      .sort((a, b) => Number(a.year) - Number(b.year));
+
+    const methodData = Array.from(byMethod.entries()).map(
+      ([method, amount]) => ({
+        method,
+        methodLabel:
+          METHOD_OPTIONS.find((m) => m.value === method)?.label || method,
+        amount,
+      })
+    );
+
+    return {
+      totalRecords: list.length,
+      totalAssets: assetIds.size,
+      totalDep,
+      totalDepThisYear,
+      totalRemaining,
+      yearData,
+      methodData,
+    };
+  }, [list]);
+
+  const METHOD_COLORS = ["#1a56ff", "#0e9f6e", "#f97316", "#6366f1", "#0ea5e9"];
+
   return (
     <>
+      {analytics.totalRecords > 0 && (
+        <div className="entity-analytics">
+          <div className="entity-kpi-row">
+            <div className="entity-kpi-card">
+              <div className="entity-kpi-label">Total depreciation</div>
+              <div className="entity-kpi-value">
+                {currency(analytics.totalDep)}
+              </div>
+            </div>
+            <div className="entity-kpi-card">
+              <div className="entity-kpi-label">Depreciation this year</div>
+              <div className="entity-kpi-value">
+                {currency(analytics.totalDepThisYear)}
+              </div>
+            </div>
+            <div className="entity-kpi-card">
+              <div className="entity-kpi-label">Remaining book value</div>
+              <div className="entity-kpi-value">
+                {currency(analytics.totalRemaining)}
+              </div>
+            </div>
+            <div className="entity-kpi-card">
+              <div className="entity-kpi-label">Assets with records</div>
+              <div className="entity-kpi-value">
+                {analytics.totalAssets.toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          <div className="entity-analytics-row">
+            <div className="entity-analytics-card">
+              <div className="entity-analytics-header">
+                <div>
+                  <div className="entity-analytics-title">
+                    Depreciation by year
+                  </div>
+                  <div className="entity-analytics-subtitle">
+                    Total depreciation per fiscal year
+                  </div>
+                </div>
+              </div>
+              <div className="entity-analytics-body">
+                {analytics.yearData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart
+                      data={analytics.yearData}
+                      margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e2e8f0"
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="year"
+                        tick={{ fill: "#94a3b8", fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fill: "#94a3b8", fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        formatter={(value) => currency(Number(value))}
+                        labelFormatter={(label) => `Year ${label}`}
+                        contentStyle={{
+                          background: "#ffffff",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 8,
+                          fontSize: 12,
+                        }}
+                      />
+                      <Bar
+                        dataKey="amount"
+                        name="Depreciation"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={32}
+                        fill="#1a56ff"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="entity-analytics-empty">No yearly data</div>
+                )}
+              </div>
+            </div>
+
+            <div className="entity-analytics-card">
+              <div className="entity-analytics-header">
+                <div>
+                  <div className="entity-analytics-title">
+                    By depreciation method
+                  </div>
+                  <div className="entity-analytics-subtitle">
+                    Share of total depreciation
+                  </div>
+                </div>
+              </div>
+              <div className="entity-analytics-body entity-analytics-body--pie">
+                {analytics.methodData.length > 0 ? (
+                  <>
+                    <div className="entity-analytics-pie">
+                      <PieChart width={190} height={190}>
+                        <Pie
+                          data={analytics.methodData}
+                          dataKey="amount"
+                          nameKey="methodLabel"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={80}
+                          paddingAngle={analytics.methodData.length ? 2 : 0}
+                          stroke="#ffffff"
+                          strokeWidth={2}
+                        >
+                          {analytics.methodData.map((entry, index) => (
+                            <Cell
+                              key={entry.method}
+                              fill={
+                                METHOD_COLORS[index % METHOD_COLORS.length]
+                              }
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value, name) => [
+                            currency(Number(value)),
+                            name,
+                          ]}
+                          contentStyle={{
+                            background: "#ffffff",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: 8,
+                            fontSize: 12,
+                          }}
+                        />
+                      </PieChart>
+                    </div>
+                    <div className="entity-analytics-legend">
+                      {analytics.methodData.map((m, index) => {
+                        const total = analytics.totalDep || 1;
+                        const pct = total
+                          ? ((m.amount / total) * 100).toFixed(0)
+                          : 0;
+                        return (
+                          <div
+                            key={m.method}
+                            className="entity-analytics-legend-item"
+                          >
+                            <span
+                              className="entity-analytics-legend-dot"
+                              style={{
+                                backgroundColor:
+                                  METHOD_COLORS[index % METHOD_COLORS.length],
+                              }}
+                            />
+                            <span className="entity-analytics-legend-label">
+                              {m.methodLabel}
+                            </span>
+                            <span className="entity-analytics-legend-value">
+                              {currency(m.amount)} ({pct}%)
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="entity-analytics-empty">
+                    No method breakdown
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <div className="entity-toolbar">
           <span />
@@ -178,7 +453,7 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
                     <td>{assetLabel(row.asset)}</td>
                     <td onClick={(ev) => ev.stopPropagation()}>
                       <div className="action-cell">
-                        <button type="button" className="action-btn" aria-label="Edit" onClick={() => openEdit(row)}><IconGear /></button>
+                        <button type="button" className="action-btn" aria-label="Edit" onClick={() => openEdit(row)}><IconEdit /></button>
                       </div>
                     </td>
                   </tr>

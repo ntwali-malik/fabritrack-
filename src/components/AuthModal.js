@@ -101,6 +101,7 @@ function AuthModal({ onLoginSuccess, onClose }) {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showLoginErrorModal, setShowLoginErrorModal] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ name: '', email: '', password: '', department: 'IT' });
   const [signupSuccessMessage, setSignupSuccessMessage] = useState('');
@@ -122,6 +123,7 @@ function AuthModal({ onLoginSuccess, onClose }) {
   const switchMode = (next) => {
     setShowPassword(false);
     setError('');
+    setShowLoginErrorModal(false);
     setSignupSuccessMessage('');
     setShowSignupSuccessModal(false);
     setShowPendingApprovalModal(false);
@@ -132,8 +134,10 @@ function AuthModal({ onLoginSuccess, onClose }) {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setShowLoginErrorModal(false);
     if (!loginForm.email?.trim() || !loginForm.password) {
       setError('Please enter email and password.');
+      setShowLoginErrorModal(true);
       return;
     }
     setLoading(true);
@@ -150,6 +154,8 @@ function AuthModal({ onLoginSuccess, onClose }) {
       if (isAccountAccessError(err)) {
         setShowPendingApprovalModal(true);
         setPendingApprovalStatus(err.userStatus ?? null);
+      } else {
+        setShowLoginErrorModal(true);
       }
     } finally {
       setLoading(false);
@@ -445,6 +451,25 @@ function AuthModal({ onLoginSuccess, onClose }) {
             <h3 className="auth-success-modal__title">Account access</h3>
             <p className="auth-success-modal__message">{error || PENDING_APPROVAL_MSG}</p>
             <button type="button" className="auth-success-modal__btn" onClick={() => { setShowPendingApprovalModal(false); setError(''); setPendingApprovalStatus(null); }}>
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Login error modal (e.g. invalid email/password) */}
+      {showLoginErrorModal && !!error && !showPendingApprovalModal && (
+        <div className="auth-success-modal-overlay auth-error-modal-overlay" onClick={() => { setShowLoginErrorModal(false); }}>
+          <div className="auth-success-modal auth-error-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="auth-error-modal__icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="13" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h3 className="auth-success-modal__title">Sign in failed</h3>
+            <p className="auth-success-modal__message">{error}</p>
+            <button type="button" className="auth-success-modal__btn" onClick={() => { setShowLoginErrorModal(false); }}>
               OK
             </button>
           </div>

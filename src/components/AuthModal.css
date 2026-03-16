@@ -713,6 +713,19 @@
   justify-content: center;
 }
 
+/* ─── Login error modal (invalid credentials, etc.) ─────────── */
+.auth-error-modal__icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.14) 0%, rgba(185, 28, 28, 0.18) 100%);
+  color: #b91c1c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .auth-pending-modal .auth-success-modal__title {
   color: var(--text);
 }

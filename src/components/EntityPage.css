@@ -1,4 +1,12 @@
-/* Shared entity CRUD page – list, toolbar, modal and form */
+/* Shared entity CRUD page – toolbar, card, modal and form (AssetPage-inspired) */
+
+.card {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #dde6ef);
+  border-radius: 13px;
+  padding: 18px 18px 16px;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.06);
+}
 
 .entity-toolbar {
   display: flex;
@@ -6,7 +14,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .entity-toolbar-desc {
@@ -23,7 +31,7 @@
   border-radius: 12px;
   font-size: 0.875rem;
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--fb, 'DM Sans', sans-serif);
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -83,6 +91,170 @@
   padding: 32px;
   text-align: center;
   color: #64748b;
+}
+
+/* ─── Action cell/buttons (styled like AssetPage) ─────────── */
+.action-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border, #dde6ef);
+  background: var(--surface2, #f8fafc);
+  color: var(--ink3, #6b7280);
+  cursor: pointer;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.14s;
+}
+
+.action-btn:hover {
+  border-color: var(--blue, #1a8fd1);
+  color: var(--blue, #1a8fd1);
+  background: rgba(26, 143, 209, 0.05);
+}
+
+/* ─── Depreciation analytics (cards + charts) ─────────────── */
+.entity-analytics {
+  margin-bottom: 20px;
+}
+
+.entity-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.entity-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.entity-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+.entity-kpi-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.entity-analytics-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.entity-analytics-card {
+  flex: 1;
+  min-width: 260px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.entity-analytics-header {
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.entity-analytics-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.entity-analytics-subtitle {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.entity-analytics-body {
+  padding: 8px 10px 10px;
+  min-height: 200px;
+}
+
+.entity-analytics-body--pie {
+  display: flex;
+  gap: 4px;
+  padding: 6px 10px 12px;
+}
+
+.entity-analytics-pie {
+  flex: 0 0 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.entity-analytics-legend {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0 6px 4px;
+}
+
+.entity-analytics-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #4b5563;
+}
+
+.entity-analytics-legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.entity-analytics-legend-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entity-analytics-legend-value {
+  font-weight: 600;
+  color: #111827;
+}
+
+.entity-analytics-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: #9ca3af;
 }
 
 .entity-status {
@@ -197,7 +369,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   font-size: 0.875rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--fb, 'DM Sans', sans-serif);
   color: #0f172a;
   transition: border-color 0.15s;
 }
@@ -229,7 +401,7 @@
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--fb, 'DM Sans', sans-serif);
   cursor: pointer;
   transition: all 0.15s;
 }

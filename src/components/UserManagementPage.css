@@ -11,6 +11,7 @@
   border: none;
   font-size: 0.85rem;
   font-weight: 600;
+  font-family: var(--fb, 'DM Sans', sans-serif);
   cursor: pointer;
   background: linear-gradient(135deg, #1a8fd1, #3db8f5);
   color: #fff;
@@ -171,7 +172,7 @@
   border: 1px solid #e5e7eb;
   padding: 8px 10px;
   font-size: 0.85rem;
-  font-family: inherit;
+  font-family: var(--fb, 'DM Sans', sans-serif);
   color: #111827;
 }
 
@@ -196,6 +197,7 @@
   border: 1px solid transparent;
   font-size: 0.85rem;
   font-weight: 600;
+  font-family: var(--fb, 'DM Sans', sans-serif);
   cursor: pointer;
 }
 
