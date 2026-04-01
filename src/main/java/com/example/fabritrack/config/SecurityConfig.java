@@ -51,45 +51,47 @@ public class SecurityConfig {
                 .requestMatchers("/api/users/signup", "/api/users/login").permitAll()
                 // Own profile – any authenticated user
                 .requestMatchers("/api/users/me", "/api/users/me/**").authenticated()
-                // User management – Admin only
-                .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/users/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
-                // Asset categories & locations – Admin, IT
-                .requestMatchers("/api/asset-categories", "/api/asset-categories/**").hasAnyRole("ADMIN", "IT")
-                .requestMatchers("/api/locations", "/api/locations/**").hasAnyRole("ADMIN", "IT")
-                // Assets – Admin & IT full; Finance read-only
-                .requestMatchers(HttpMethod.GET, "/api/assets").hasAnyRole("ADMIN", "IT", "FINANCE")
-                .requestMatchers(HttpMethod.GET, "/api/assets/**").hasAnyRole("ADMIN", "IT", "FINANCE")
-                .requestMatchers(HttpMethod.POST, "/api/assets").hasAnyRole("ADMIN", "IT")
-                .requestMatchers(HttpMethod.PUT, "/api/assets/**").hasAnyRole("ADMIN", "IT")
-                .requestMatchers(HttpMethod.DELETE, "/api/assets/**").hasAnyRole("ADMIN", "IT")
-                // Assignments, reservations, maintenance, attachments, comments – Admin, IT
-                .requestMatchers("/api/asset-assignments", "/api/asset-assignments/**").hasAnyRole("ADMIN", "IT")
-                .requestMatchers("/api/asset-reservations", "/api/asset-reservations/**").hasAnyRole("ADMIN", "IT")
-                .requestMatchers("/api/maintenance-records", "/api/maintenance-records/**").hasAnyRole("ADMIN", "IT")
-                .requestMatchers("/api/attachments", "/api/attachments/**").hasAnyRole("ADMIN", "IT")
-                .requestMatchers("/api/comments", "/api/comments/**").hasAnyRole("ADMIN", "IT")
-                // Asset movements – Admin & IT full; Security can view and create (track movement)
-                .requestMatchers(HttpMethod.GET, "/api/asset-movements").hasAnyRole("ADMIN", "IT", "SECURITY")
-                .requestMatchers(HttpMethod.GET, "/api/asset-movements/**").hasAnyRole("ADMIN", "IT", "SECURITY")
-                .requestMatchers(HttpMethod.POST, "/api/asset-movements").hasAnyRole("ADMIN", "IT", "SECURITY")
-                .requestMatchers(HttpMethod.POST, "/api/asset-movements/**").hasAnyRole("ADMIN", "IT", "SECURITY")
-                .requestMatchers(HttpMethod.PUT, "/api/asset-movements/**").hasAnyRole("ADMIN", "IT")
-                .requestMatchers(HttpMethod.DELETE, "/api/asset-movements/**").hasAnyRole("ADMIN", "IT")
-                // Depreciation – Admin, Finance
-                .requestMatchers("/api/depreciation-records", "/api/depreciation-records/**").hasAnyRole("ADMIN", "FINANCE")
-                // Audit logs – Admin, Security
-                .requestMatchers("/api/audit-logs", "/api/audit-logs/**").hasAnyRole("ADMIN", "SECURITY")
-                // Notifications – all roles
-                .requestMatchers("/api/notifications", "/api/notifications/**").hasAnyRole("ADMIN", "IT", "FINANCE", "SECURITY")
-                // Anomaly / theft-risk alerts – Admin, Security (asset recovery)
-                .requestMatchers("/api/anomaly-alerts", "/api/anomaly-alerts/**").hasAnyRole("ADMIN", "SECURITY")
-                // Any other API – Admin only
-                .requestMatchers("/api/**").hasRole("ADMIN")
+                // User management
+                .requestMatchers(HttpMethod.GET, "/api/users").hasAuthority("USER_MANAGE")
+                .requestMatchers(HttpMethod.POST, "/api/users").hasAuthority("USER_MANAGE")
+                .requestMatchers(HttpMethod.GET, "/api/users/**").hasAuthority("USER_MANAGE")
+                .requestMatchers(HttpMethod.POST, "/api/users/**").hasAuthority("USER_MANAGE")
+                .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAuthority("USER_MANAGE")
+                .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAuthority("USER_MANAGE")
+                // Asset categories & locations
+                .requestMatchers("/api/asset-categories", "/api/asset-categories/**").hasAuthority("ASSET_CATEGORY_MANAGE")
+                .requestMatchers("/api/locations", "/api/locations/**").hasAuthority("LOCATION_MANAGE")
+                // Assets
+                .requestMatchers(HttpMethod.GET, "/api/assets").hasAuthority("ASSET_READ")
+                .requestMatchers(HttpMethod.GET, "/api/assets/**").hasAuthority("ASSET_READ")
+                .requestMatchers(HttpMethod.POST, "/api/assets").hasAuthority("ASSET_WRITE")
+                .requestMatchers(HttpMethod.PUT, "/api/assets/**").hasAuthority("ASSET_WRITE")
+                .requestMatchers(HttpMethod.DELETE, "/api/assets/**").hasAuthority("ASSET_WRITE")
+                // Assignments, employees, reservations, maintenance, attachments, comments
+                .requestMatchers("/api/asset-assignments", "/api/asset-assignments/**").hasAuthority("ASSIGNMENT_MANAGE")
+                .requestMatchers("/api/employees", "/api/employees/**").hasAuthority("EMPLOYEE_MANAGE")
+                .requestMatchers("/api/asset-reservations", "/api/asset-reservations/**").hasAuthority("RESERVATION_MANAGE")
+                .requestMatchers("/api/field-work-asset-requests", "/api/field-work-asset-requests/**").authenticated()
+                .requestMatchers("/api/maintenance-records", "/api/maintenance-records/**").hasAuthority("MAINTENANCE_MANAGE")
+                .requestMatchers("/api/attachments", "/api/attachments/**").hasAuthority("ATTACHMENT_MANAGE")
+                .requestMatchers("/api/comments", "/api/comments/**").hasAuthority("COMMENT_MANAGE")
+                // Asset movements
+                .requestMatchers(HttpMethod.GET, "/api/asset-movements").hasAuthority("MOVEMENT_READ")
+                .requestMatchers(HttpMethod.GET, "/api/asset-movements/**").hasAuthority("MOVEMENT_READ")
+                .requestMatchers(HttpMethod.POST, "/api/asset-movements").hasAuthority("MOVEMENT_WRITE")
+                .requestMatchers(HttpMethod.POST, "/api/asset-movements/**").hasAuthority("MOVEMENT_WRITE")
+                .requestMatchers(HttpMethod.PUT, "/api/asset-movements/**").hasAuthority("MOVEMENT_WRITE")
+                .requestMatchers(HttpMethod.DELETE, "/api/asset-movements/**").hasAuthority("MOVEMENT_WRITE")
+                // Depreciation
+                .requestMatchers("/api/depreciation-records", "/api/depreciation-records/**").hasAuthority("DEPRECIATION_MANAGE")
+                // Audit logs
+                .requestMatchers("/api/audit-logs", "/api/audit-logs/**").hasAuthority("AUDIT_READ")
+                // Notifications
+                .requestMatchers("/api/notifications", "/api/notifications/**").hasAuthority("NOTIFICATION_READ")
+                // Anomaly / theft-risk alerts
+                .requestMatchers("/api/anomaly-alerts", "/api/anomaly-alerts/**").hasAuthority("ANOMALY_READ")
+                // Any other API – require admin-level permission
+                .requestMatchers("/api/**").hasAuthority("USER_MANAGE")
                 .anyRequest().permitAll())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

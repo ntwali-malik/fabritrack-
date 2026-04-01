@@ -14,6 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/asset-movements")
+@CrossOrigin(origins = "*")
 public class AssetMovementController {
 
     private final AssetMovementRepository repository;

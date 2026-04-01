@@ -194,7 +194,7 @@ Use when you want to create another user via API (optional; you can use signup i
 
 ## 6. Asset assignments
 
-Replace `asset.id` and `user.id` with real UUIDs from GET /api/assets and GET /api/users (or from signup/login response).
+Assignments support **personnel** (employee) or **department**. Provide exactly one of `employee` or `assigneeDepartment`.
 
 ### POST /api/asset-assignments
 ```json
@@ -203,11 +203,40 @@ Replace `asset.id` and `user.id` with real UUIDs from GET /api/assets and GET /a
   "returnDate": "2024-12-31",
   "status": "ACTIVE",
   "asset": { "id": "<asset-uuid>" },
-  "user": { "id": "<user-uuid>" }
+  "employee": { "id": 1 }
 }
 ```
 
-**Status:** `ACTIVE` | `RETURNED` | `OVERDUE`
+Or for department:
+```json
+{
+  "assignedDate": "2024-02-01",
+  "status": "ACTIVE",
+  "asset": { "id": "<asset-uuid>" },
+  "assigneeDepartment": "IT"
+}
+```
+
+**Status:** `ACTIVE` | `RETURNED` | `OVERDUE`  
+**assigneeDepartment:** `HR` | `IT` | `FINANCE` | `OPERATIONS` | `MARKETING` | `LEGAL` | `LOGISTICS` | `MANAGEMENT` | `SECURITY`
+
+- **409** if the asset is already assigned (not returned). Return the asset first before reassigning.
+
+### GET /api/asset-assignments/assigned-assets (for movement UI)
+
+Returns active assignments (status ≠ RETURNED) for **personnel** or **department**, so the client can list assets to move.
+
+| Query param | Required | Description |
+|-------------|----------|-------------|
+| `employeeId` | one of these | Long – assignments for this employee |
+| `assigneeDepartment` | one of these | Department enum – assignments for this department |
+
+**Example:** `GET /api/asset-assignments/assigned-assets?employeeId=1`  
+**Example:** `GET /api/asset-assignments/assigned-assets?assigneeDepartment=IT`
+
+Response: array of `AssetAssignment` (each includes `asset`, `employee`, `assigneeDepartment`). Use `assignment.asset.id` for creating movements.
+
+- **400** if both or neither of `employeeId` and `assigneeDepartment` are provided.
 
 ---
 

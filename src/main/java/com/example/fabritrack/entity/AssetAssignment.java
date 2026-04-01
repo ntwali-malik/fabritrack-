@@ -26,10 +26,16 @@ public class AssetAssignment {
     @JoinColumn(name = "asset_id", nullable = false)
     private Asset asset;
 
+    /** Assign to personnel (employee). Use either employee or department, not both. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "employee_id")
     @NotFound(action = NotFoundAction.IGNORE)
-    private User user;
+    private Employee employee;
+
+    /** Assign to department (pool). Use either employee or department, not both. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "assignee_department")
+    private Department assigneeDepartment;
 
     public enum AssignmentStatus {
         ACTIVE, RETURNED, OVERDUE
@@ -51,6 +57,9 @@ public class AssetAssignment {
     public Asset getAsset() { return asset; }
     public void setAsset(Asset asset) { this.asset = asset; }
 
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public Employee getEmployee() { return employee; }
+    public void setEmployee(Employee employee) { this.employee = employee; }
+
+    public Department getAssigneeDepartment() { return assigneeDepartment; }
+    public void setAssigneeDepartment(Department assigneeDepartment) { this.assigneeDepartment = assigneeDepartment; }
 }

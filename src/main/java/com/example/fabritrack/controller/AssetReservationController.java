@@ -15,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/asset-reservations")
+@CrossOrigin(origins = "*")
 public class AssetReservationController {
 
     private final AssetReservationRepository repository;

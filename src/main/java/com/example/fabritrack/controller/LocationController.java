@@ -1,23 +1,29 @@
 package com.example.fabritrack.controller;
 
 import com.example.fabritrack.entity.Location;
+import com.example.fabritrack.entity.Role;
 import com.example.fabritrack.repository.LocationRepository;
+import com.example.fabritrack.repository.UserRepository;
 import com.example.fabritrack.service.AuditLogService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/locations")
+@CrossOrigin(origins = "*")
 public class LocationController {
 
     private final LocationRepository repository;
+    private final UserRepository userRepository;
     private final AuditLogService auditLogService;
 
-    public LocationController(LocationRepository repository, AuditLogService auditLogService) {
+    public LocationController(LocationRepository repository, UserRepository userRepository, AuditLogService auditLogService) {
         this.repository = repository;
+        this.userRepository = userRepository;
         this.auditLogService = auditLogService;
     }
 
@@ -34,7 +40,11 @@ public class LocationController {
     }
 
     @PostMapping
-    public ResponseEntity<Location> create(@RequestBody Location entity) {
+    public ResponseEntity<?> create(@RequestBody Location entity) {
+        ResponseEntity<String> validation = resolveInstallerAndValidate(entity);
+        if (validation != null) {
+            return validation;
+        }
         Location saved = repository.save(entity);
         auditLogService.log("Location", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.CREATE,
                 "Location: " + (saved.getName() != null ? saved.getName() : ""), null);
@@ -42,14 +52,18 @@ public class LocationController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Location> update(@PathVariable Long id, @RequestBody Location entity) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Location entity) {
         return repository.findById(id)
                 .map(existing -> {
                     entity.setId(id);
+                    ResponseEntity<String> validation = resolveInstallerAndValidate(entity);
+                    if (validation != null) {
+                        return validation;
+                    }
                     Location saved = repository.save(entity);
                     auditLogService.log("Location", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.UPDATE,
                             "Location: " + (saved.getName() != null ? saved.getName() : ""), null);
-                    return ResponseEntity.ok(saved);
+                    return ResponseEntity.<Object>ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -64,5 +78,23 @@ public class LocationController {
                         "Location deleted: " + (l.getName() != null ? l.getName() : ""), null));
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private ResponseEntity<String> resolveInstallerAndValidate(Location entity) {
+        if (entity.getInstalledBy() == null || entity.getInstalledBy().getId() == null) {
+            entity.setInstalledBy(null);
+            return null;
+        }
+        UUID installerId = entity.getInstalledBy().getId();
+        var userOpt = userRepository.findById(installerId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("installedBy user not found");
+        }
+        var user = userOpt.get();
+        if (user.getRole() != Role.TECHNICIAN) {
+            return ResponseEntity.badRequest().body("installedBy user must have TECHNICIAN role");
+        }
+        entity.setInstalledBy(user);
+        return null;
     }
 }

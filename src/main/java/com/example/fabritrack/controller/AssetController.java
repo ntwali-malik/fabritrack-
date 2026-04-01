@@ -1,6 +1,7 @@
 package com.example.fabritrack.controller;
 
 import com.example.fabritrack.entity.Asset;
+import com.example.fabritrack.entity.Department;
 import com.example.fabritrack.repository.AssetCategoryRepository;
 import com.example.fabritrack.repository.AssetRepository;
 import com.example.fabritrack.repository.LocationRepository;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -37,6 +39,21 @@ public class AssetController {
         return repository.findAll();
     }
 
+    /** Returns the next asset tag for the given department (e.g. FB-IT-001, FB-FIN-001). Used by frontend to preview before create. */
+    @GetMapping("/next-tag")
+    public ResponseEntity<?> getNextTag(@RequestParam String department) {
+        if (department == null || department.isBlank()) {
+            return ResponseEntity.badRequest().body("Department is required.");
+        }
+        try {
+            Department dept = Department.valueOf(department.trim().toUpperCase());
+            String nextTag = generateNextAssetTag(dept);
+            return ResponseEntity.ok(java.util.Map.of("nextTag", nextTag));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid department: " + department);
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Asset> findById(@PathVariable UUID id) {
         return repository.findById(id)
@@ -45,8 +62,13 @@ public class AssetController {
     }
 
     @PostMapping
-    public ResponseEntity<Asset> create(@RequestBody Asset entity) {
+    public ResponseEntity<?> create(@RequestBody Asset entity) {
+        if (entity.getDepartment() == null) {
+            return ResponseEntity.badRequest().body("Department is required to generate asset tag.");
+        }
         resolveRelations(entity);
+        // Always generate tag in FB-DEPTCODE-NNN format (e.g. FB-IT-001, FB-FIN-001); ignore any client-supplied value
+        entity.setAssetTag(generateNextAssetTag(entity.getDepartment()));
         if (entity.getPurchaseCost() != null) {
             entity.setCurrentValue(entity.getPurchaseCost());
         }
@@ -63,6 +85,7 @@ public class AssetController {
                     entity.setId(id);
                     entity.setCreatedAt(existing.getCreatedAt());
                     entity.setCurrentValue(existing.getCurrentValue());
+                    entity.setAssetTag(existing.getAssetTag()); // keep tag immutable after creation
                     resolveRelations(entity);
                     Asset saved = repository.save(entity);
                     auditLogService.log("Asset", saved.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.UPDATE,
@@ -91,5 +114,52 @@ public class AssetController {
         if (entity.getLocation() != null && entity.getLocation().getId() != null) {
             entity.setLocation(locationRepository.getReferenceById(entity.getLocation().getId()));
         }
+    }
+
+    /** Asset tag format: FB-DEPTCODE-NNN (e.g. FB-IT-001, FB-FIN-002). */
+    private static final String ASSET_TAG_PREFIX = "FB-";
+    private static final String ASSET_TAG_NUMBER_FORMAT = "%03d";
+
+    private String getDepartmentTagCode(Department department) {
+        // Shortcodes keep the tag readable while still being deterministic.
+        return switch (department) {
+            case FINANCE -> "FIN";
+            default -> department.name();
+        };
+    }
+
+    private List<String> getDepartmentTagPrefixesForSequence(Department department) {
+        // Support legacy tags that used the full enum name (e.g. FB-FINANCE-001) so numbering
+        // doesn't reset if older assets already exist.
+        String primaryPrefix = ASSET_TAG_PREFIX + getDepartmentTagCode(department) + "-";
+        String legacyPrefix = ASSET_TAG_PREFIX + department.name() + "-";
+        if (primaryPrefix.equals(legacyPrefix)) {
+            return List.of(primaryPrefix);
+        }
+        return List.of(primaryPrefix, legacyPrefix);
+    }
+
+    private String generateNextAssetTag(Department department) {
+        String outputPrefix = ASSET_TAG_PREFIX + getDepartmentTagCode(department) + "-";
+        Optional<Asset> top = repository.findTopByDepartmentOrderByAssetTagDesc(department);
+        int nextNum = 1;
+        if (top.isPresent() && top.get().getAssetTag() != null) {
+            String tag = top.get().getAssetTag();
+            for (String prefix : getDepartmentTagPrefixesForSequence(department)) {
+                if (!tag.startsWith(prefix)) continue;
+
+                String numPart = tag.substring(prefix.length()).trim();
+                if (!numPart.isEmpty()) {
+                    try {
+                        int n = Integer.parseInt(numPart);
+                        if (n >= 0) nextNum = n + 1;
+                    } catch (NumberFormatException ignored) {
+                        // use 1
+                    }
+                }
+                break;
+            }
+        }
+        return outputPrefix + String.format(ASSET_TAG_NUMBER_FORMAT, nextNum);
     }
 }

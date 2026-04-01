@@ -1,6 +1,10 @@
 package com.example.fabritrack.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,8 +18,18 @@ public class Attachment {
     @Column(nullable = false)
     private String fileName;
 
-    @Column(nullable = false)
-    private String fileUrl;
+    /** File bytes – declare before contentLength so Hibernate binds in correct order (bytea before bigint). */
+    @Lob
+    @JdbcTypeCode(SqlTypes.VARBINARY)
+    @Column(columnDefinition = "BYTEA")
+    @JsonIgnore
+    private byte[] content;
+
+    /** MIME type (e.g. application/pdf, image/png). */
+    private String contentType;
+
+    /** File size in bytes. */
+    private Long contentLength;
 
     @Column(updatable = false)
     private LocalDateTime uploadedAt;
@@ -36,8 +50,14 @@ public class Attachment {
     public String getFileName() { return fileName; }
     public void setFileName(String fileName) { this.fileName = fileName; }
 
-    public String getFileUrl() { return fileUrl; }
-    public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }
+    public String getContentType() { return contentType; }
+    public void setContentType(String contentType) { this.contentType = contentType; }
+
+    public Long getContentLength() { return contentLength; }
+    public void setContentLength(Long contentLength) { this.contentLength = contentLength; }
+
+    public byte[] getContent() { return content; }
+    public void setContent(byte[] content) { this.content = content; }
 
     public LocalDateTime getUploadedAt() { return uploadedAt; }
     public void setUploadedAt(LocalDateTime uploadedAt) { this.uploadedAt = uploadedAt; }

@@ -14,6 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/comments")
+@CrossOrigin(origins = "*")
 public class CommentController {
 
     private final CommentRepository repository;

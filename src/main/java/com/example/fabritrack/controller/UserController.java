@@ -5,12 +5,14 @@ import com.example.fabritrack.dto.LoginResponse;
 import com.example.fabritrack.dto.SignupResponse;
 import com.example.fabritrack.dto.ErrorResponse;
 import com.example.fabritrack.dto.ApproveUserRequest;
+import com.example.fabritrack.dto.MeResponse;
 import com.example.fabritrack.dto.UpdateProfileRequest;
 import com.example.fabritrack.entity.User;
 import com.example.fabritrack.repository.UserRepository;
 import com.example.fabritrack.security.JwtService;
 import com.example.fabritrack.service.AuditLogService;
 import com.example.fabritrack.service.ProfileImageService;
+import com.example.fabritrack.service.RolePermissionService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,9 +27,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/users")
+@CrossOrigin(origins = "*")
 public class UserController {
 
     private final UserRepository userRepository;
@@ -35,14 +39,17 @@ public class UserController {
     private final JwtService jwtService;
     private final ProfileImageService profileImageService;
     private final AuditLogService auditLogService;
+    private final RolePermissionService rolePermissionService;
 
     public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
-                          ProfileImageService profileImageService, AuditLogService auditLogService) {
+                          ProfileImageService profileImageService, AuditLogService auditLogService,
+                          RolePermissionService rolePermissionService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.profileImageService = profileImageService;
         this.auditLogService = auditLogService;
+        this.rolePermissionService = rolePermissionService;
     }
 
     @GetMapping
@@ -127,20 +134,24 @@ public class UserController {
                     }
                     auditLogService.log("User", user.getId().toString(), com.example.fabritrack.entity.AuditLog.AuditAction.LOGIN,
                             "Login: " + user.getEmail(), user);
-                    return ResponseEntity.<LoginResponse>ok(new LoginResponse(jwtService.generateToken(user), user));
+                    List<String> permissions = new ArrayList<>(rolePermissionService.getPermissionNamesForRole(user.getRole()));
+                    return ResponseEntity.<LoginResponse>ok(new LoginResponse(jwtService.generateToken(user), user, permissions));
                 })
                 .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
-    /** Get the currently authenticated user's profile. */
+    /** Get the currently authenticated user's profile and permissions. */
     @GetMapping("/me")
-    public ResponseEntity<User> getCurrentUser() {
+    public ResponseEntity<MeResponse> getCurrentUser() {
         UUID userId = getCurrentUserId();
         if (userId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         return userRepository.findById(userId)
-                .map(ResponseEntity::ok)
+                .map(user -> {
+                    List<String> permissions = new ArrayList<>(rolePermissionService.getPermissionNamesForRole(user.getRole()));
+                    return ResponseEntity.<MeResponse>ok(new MeResponse(user, permissions));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 

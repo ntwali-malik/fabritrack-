@@ -11,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/asset-categories")
+@CrossOrigin(origins = "*")
 public class AssetCategoryController {
 
     private final AssetCategoryRepository repository;

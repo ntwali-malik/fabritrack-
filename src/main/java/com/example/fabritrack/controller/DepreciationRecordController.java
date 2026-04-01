@@ -14,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/depreciation-records")
+@CrossOrigin(origins = "*")
 public class DepreciationRecordController {
 
     private final DepreciationRecordRepository repository;

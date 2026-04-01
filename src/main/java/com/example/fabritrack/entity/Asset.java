@@ -37,6 +37,11 @@ public class Asset {
     private String qrCode;
     private LocalDate warrantyExpiryDate;
 
+    /** Supplier info for warranty and support (optional). */
+    private String supplierName;
+    private String supplierEmail;
+    private String supplierPhone;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
@@ -100,6 +105,15 @@ public class Asset {
 
     public LocalDate getWarrantyExpiryDate() { return warrantyExpiryDate; }
     public void setWarrantyExpiryDate(LocalDate warrantyExpiryDate) { this.warrantyExpiryDate = warrantyExpiryDate; }
+
+    public String getSupplierName() { return supplierName; }
+    public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
+
+    public String getSupplierEmail() { return supplierEmail; }
+    public void setSupplierEmail(String supplierEmail) { this.supplierEmail = supplierEmail; }
+
+    public String getSupplierPhone() { return supplierPhone; }
+    public void setSupplierPhone(String supplierPhone) { this.supplierPhone = supplierPhone; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
