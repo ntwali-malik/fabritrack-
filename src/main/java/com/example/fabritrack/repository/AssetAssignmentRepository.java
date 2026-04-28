@@ -18,6 +18,12 @@ public interface AssetAssignmentRepository extends JpaRepository<AssetAssignment
     /** Active assignments for an employee (for movement: move this person's assigned assets). */
     List<AssetAssignment> findByEmployee_IdAndStatusNot(Long employeeId, AssetAssignment.AssignmentStatus status);
 
+    /** Active assignments for a user (current model: assign directly to users). */
+    List<AssetAssignment> findByUser_IdAndStatusNot(UUID userId, AssetAssignment.AssignmentStatus status);
+
     /** Active assignments for a department (for movement: move this department's assigned assets). */
     List<AssetAssignment> findByAssigneeDepartmentAndStatusNot(Department assigneeDepartment, AssetAssignment.AssignmentStatus status);
+
+    /** Remove all assignment rows for an asset before deleting it. */
+    void deleteByAsset_Id(UUID assetId);
 }

@@ -22,6 +22,10 @@ public class Location {
     @JoinColumn(name = "installed_by_user_id")
     private User installedBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "asset_id")
+    private Asset asset;
+
     private Double amount;
 
     private LocalDate paymentDate;
@@ -50,6 +54,9 @@ public class Location {
 
     public User getInstalledBy() { return installedBy; }
     public void setInstalledBy(User installedBy) { this.installedBy = installedBy; }
+
+    public Asset getAsset() { return asset; }
+    public void setAsset(Asset asset) { this.asset = asset; }
 
     public Double getAmount() { return amount; }
     public void setAmount(Double amount) { this.amount = amount; }

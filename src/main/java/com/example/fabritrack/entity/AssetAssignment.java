@@ -32,6 +32,12 @@ public class AssetAssignment {
     @NotFound(action = NotFoundAction.IGNORE)
     private Employee employee;
 
+    /** Assign directly to a system user (no employee record required). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @NotFound(action = NotFoundAction.IGNORE)
+    private User user;
+
     /** Assign to department (pool). Use either employee or department, not both. */
     @Enumerated(EnumType.STRING)
     @Column(name = "assignee_department")
@@ -59,6 +65,9 @@ public class AssetAssignment {
 
     public Employee getEmployee() { return employee; }
     public void setEmployee(Employee employee) { this.employee = employee; }
+
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
     public Department getAssigneeDepartment() { return assigneeDepartment; }
     public void setAssigneeDepartment(Department assigneeDepartment) { this.assigneeDepartment = assigneeDepartment; }

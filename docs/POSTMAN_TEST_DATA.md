@@ -40,7 +40,7 @@ Creates a user with status `PENDING_APPROVAL`. Returns `{ "message": "...", "use
 ```
 
 **Role:** `ADMIN` | `IT` | `FINANCE` | `SECURITY`  
-**Department:** `HR` | `IT` | `FINANCE` | `OPERATIONS` | `MARKETING` | `LEGAL` | `LOGISTICS` | `MANAGEMENT` | `SECURITY`
+**Department:** `HR` | `IT` | `FINANCE` | `OPERATIONS` | `MARKETING` | `LEGAL` | `LOGISTICS` | `MANAGEMENT` | `SECURITY` | `TECHNICAL`
 
 ### POST /api/users/login (no auth)
 Returns `{ "token": "...", "user": { ... } }` when credentials are valid and user is **ACTIVE**.  
@@ -74,8 +74,8 @@ The system uses four roles. Endpoint access is enforced by the API.
 
 | Role | Permissions |
 |------|-------------|
-| **ADMIN** | Full access: user management, all assets, categories, locations, assignments, reservations, movements, maintenance, attachments, comments, depreciation, audit logs, notifications. |
-| **IT** | Asset lifecycle: categories, locations, assets (CRUD), assignments, reservations, movements, maintenance, attachments, comments. Read own profile. Not: user management, depreciation. |
+| **ADMIN** | Full access: user management, all assets, categories, locations, technician tasks, assignments, reservations, movements, maintenance, attachments, location installation feedback, depreciation, audit logs, notifications. |
+| **IT** | Asset lifecycle: categories, locations, assets (CRUD), technician tasks (assign/manage), assignments, reservations, movements, maintenance, attachments, location installation feedback. Read own profile. Not: user management, depreciation. |
 | **FINANCE** | Depreciation records (full CRUD). Read-only access to assets (for costs/values). Notifications. Read own profile. Not: user management, assignments, maintenance, audit logs. |
 | **SECURITY** | Audit logs (view and create). Asset movements (view and create). Notifications. Read own profile. Not: user management, asset CRUD, depreciation. |
 
@@ -218,7 +218,7 @@ Or for department:
 ```
 
 **Status:** `ACTIVE` | `RETURNED` | `OVERDUE`  
-**assigneeDepartment:** `HR` | `IT` | `FINANCE` | `OPERATIONS` | `MARKETING` | `LEGAL` | `LOGISTICS` | `MANAGEMENT` | `SECURITY`
+**assigneeDepartment:** `HR` | `IT` | `FINANCE` | `OPERATIONS` | `MARKETING` | `LEGAL` | `LOGISTICS` | `MANAGEMENT` | `SECURITY` | `TECHNICAL`
 
 - **409** if the asset is already assigned (not returned). Return the asset first before reassigning.
 
@@ -306,20 +306,64 @@ Use an existing asset UUID.
 
 ---
 
-## 11. Comments
+## 11. Location installation feedback
 
-### POST /api/comments
+Post-installation feedback for a **location** (not tied to a single asset). Requires permission `COMMENT_MANAGE` (ADMIN, IT, TECHNICIAN).
+
+### GET /api/location-installation-feedback?locationId={id}
+
+Returns feedback for one location, newest first. Omit `locationId` to list all.
+
+### POST /api/location-installation-feedback
 ```json
 {
-  "message": "Screen has minor scratch on delivery. Documented for records.",
-  "asset": { "id": "<asset-uuid>" },
-  "user": { "id": "<user-uuid>" }
+  "feedbackText": "Installation completed on schedule. Cabling labeled clearly; recommend documenting the network closet layout in the knowledge base.",
+  "satisfactionLevel": "SATISFIED",
+  "location": { "id": 1 },
+  "submittedBy": { "id": "<user-uuid>" }
 }
+```
+
+**satisfactionLevel (optional):** `VERY_SATISFIED` | `SATISFIED` | `NEUTRAL` | `DISSATISFIED` | `VERY_DISSATISFIED`
+
+---
+
+## 12. Technician tasks (location work)
+
+Location-scoped tasks assigned to **TECHNICIAN** users. **FIELD_TASK_READ** (list, leaderboard, status updates on own tasks); **FIELD_TASK_MANAGE** (create, full edit, delete).
+
+### GET /api/technician-tasks/leaderboard?from=&to=
+
+Optional `from` / `to` as ISO date-time. Ranks technicians by count of **DONE** tasks (with `completedAt` in range when provided).
+
+### GET /api/technician-tasks?locationId=&assignedToId=&status=
+
+Coordinators see all tasks; technicians see only tasks assigned to them.
+
+### POST /api/technician-tasks
+```json
+{
+  "title": "Rack grounding verification",
+  "description": "Confirm earth bond and photo documentation.",
+  "location": { "id": 1 },
+  "assignedTo": { "id": "<technician-user-uuid>" },
+  "priority": "HIGH",
+  "status": "PENDING",
+  "dueAt": "2026-04-10T17:00:00"
+}
+```
+
+**priority:** `LOW` | `MEDIUM` | `HIGH` | `URGENT`  
+**status:** `PENDING` | `IN_PROGRESS` | `DONE` | `CANCELLED`
+
+### PATCH /api/technician-tasks/{id}/status
+```json
+{ "status": "IN_PROGRESS" }
 ```
 
 ---
 
-## 12. Depreciation records
+## 13. Depreciation records
 
 ### POST /api/depreciation-records
 ```json
@@ -336,7 +380,7 @@ Use an existing asset UUID.
 
 ---
 
-## 13. Maintenance records
+## 14. Maintenance records
 
 ### POST /api/maintenance-records
 ```json
@@ -356,7 +400,7 @@ Use an existing asset UUID.
 
 ---
 
-## 14. Notifications
+## 15. Notifications
 
 ### POST /api/notifications
 ```json
@@ -373,7 +417,7 @@ Use an existing asset UUID.
 
 ---
 
-## 15. Theft & Anomaly Alerts (AI-Powered Detection)
+## 16. Theft & Anomaly Alerts (AI-Powered Detection)
 
 Rule-based detection runs on every asset movement. When a rule triggers (e.g. after-hours move, high-value asset moved by non-ADMIN/SECURITY, or same asset moved >5 times in 24h), THEFT_RISK notifications are sent to ADMIN and SECURITY, and an anomaly alert is stored.
 
@@ -419,7 +463,7 @@ Dashboard: open **http://localhost:8080/** and paste a JWT (Admin or Security) t
 3. **POST** /api/asset-categories with Laptops JSON → note `id` (e.g. 1).
 4. **POST** /api/locations with Building A JSON → note `id` (e.g. 1).
 5. **POST** /api/assets with the asset JSON, using `"category": { "id": 1 }`, `"location": { "id": 1 }` → note asset `id` (UUID).
-6. Use that asset UUID and the user UUID from step 1 for assignments, movements, comments, etc.
+6. Use that asset UUID and the user UUID from step 1 for assignments, movements, location installation feedback, etc.
 
 All **GET**, **PUT**, and **DELETE** use the same base path, e.g.:
 - **GET** /api/assets  

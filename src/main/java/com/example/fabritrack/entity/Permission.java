@@ -16,6 +16,10 @@ public enum Permission {
     MAINTENANCE_MANAGE,
     ATTACHMENT_MANAGE,
     COMMENT_MANAGE,
+    /** View field/installation tasks and leaderboard; update status on own assignments. */
+    FIELD_TASK_READ,
+    /** Create, assign, edit, and delete technician tasks. */
+    FIELD_TASK_MANAGE,
     MOVEMENT_READ,
     MOVEMENT_WRITE,
     DEPRECIATION_MANAGE,

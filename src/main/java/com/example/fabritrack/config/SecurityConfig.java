@@ -67,14 +67,20 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/assets").hasAuthority("ASSET_WRITE")
                 .requestMatchers(HttpMethod.PUT, "/api/assets/**").hasAuthority("ASSET_WRITE")
                 .requestMatchers(HttpMethod.DELETE, "/api/assets/**").hasAuthority("ASSET_WRITE")
-                // Assignments, employees, reservations, maintenance, attachments, comments
+                // Assignments, employees, reservations, maintenance, attachments, location installation feedback
                 .requestMatchers("/api/asset-assignments", "/api/asset-assignments/**").hasAuthority("ASSIGNMENT_MANAGE")
                 .requestMatchers("/api/employees", "/api/employees/**").hasAuthority("EMPLOYEE_MANAGE")
                 .requestMatchers("/api/asset-reservations", "/api/asset-reservations/**").hasAuthority("RESERVATION_MANAGE")
                 .requestMatchers("/api/field-work-asset-requests", "/api/field-work-asset-requests/**").authenticated()
                 .requestMatchers("/api/maintenance-records", "/api/maintenance-records/**").hasAuthority("MAINTENANCE_MANAGE")
                 .requestMatchers("/api/attachments", "/api/attachments/**").hasAuthority("ATTACHMENT_MANAGE")
-                .requestMatchers("/api/comments", "/api/comments/**").hasAuthority("COMMENT_MANAGE")
+                .requestMatchers("/api/location-installation-feedback", "/api/location-installation-feedback/**").hasAuthority("COMMENT_MANAGE")
+                // Technician tasks (field / installation work)
+                .requestMatchers(HttpMethod.GET, "/api/technician-tasks", "/api/technician-tasks/**").hasAuthority("FIELD_TASK_READ")
+                .requestMatchers(HttpMethod.PATCH, "/api/technician-tasks/**").hasAuthority("FIELD_TASK_READ")
+                .requestMatchers(HttpMethod.POST, "/api/technician-tasks").hasAuthority("FIELD_TASK_MANAGE")
+                .requestMatchers(HttpMethod.PUT, "/api/technician-tasks/**").hasAuthority("FIELD_TASK_MANAGE")
+                .requestMatchers(HttpMethod.DELETE, "/api/technician-tasks/**").hasAuthority("FIELD_TASK_MANAGE")
                 // Asset movements
                 .requestMatchers(HttpMethod.GET, "/api/asset-movements").hasAuthority("MOVEMENT_READ")
                 .requestMatchers(HttpMethod.GET, "/api/asset-movements/**").hasAuthority("MOVEMENT_READ")

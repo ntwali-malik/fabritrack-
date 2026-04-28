@@ -10,5 +10,6 @@ public enum Department {
     LEGAL,
     LOGISTICS,
     MANAGEMENT,
-    SECURITY
+    SECURITY,
+    TECHNICAL
 }

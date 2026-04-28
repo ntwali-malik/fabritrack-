@@ -6,6 +6,7 @@ import com.example.fabritrack.entity.User;
 import com.example.fabritrack.repository.AssetRepository;
 import com.example.fabritrack.repository.AssetAssignmentRepository;
 import com.example.fabritrack.repository.EmployeeRepository;
+import com.example.fabritrack.repository.UserRepository;
 import com.example.fabritrack.service.AuditLogService;
 import com.example.fabritrack.service.NotificationService;
 import org.springframework.http.HttpStatus;
@@ -24,17 +25,20 @@ public class AssetAssignmentController {
     private final AssetAssignmentRepository repository;
     private final AssetRepository assetRepository;
     private final EmployeeRepository employeeRepository;
+    private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
 
     public AssetAssignmentController(AssetAssignmentRepository repository,
                                      AssetRepository assetRepository,
                                      EmployeeRepository employeeRepository,
+                                     UserRepository userRepository,
                                      NotificationService notificationService,
                                      AuditLogService auditLogService) {
         this.repository = repository;
         this.assetRepository = assetRepository;
         this.employeeRepository = employeeRepository;
+        this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
     }
@@ -47,17 +51,21 @@ public class AssetAssignmentController {
     /** Get currently assigned assets for movement: by employee or by department (status != RETURNED). */
     @GetMapping("/assigned-assets")
     public ResponseEntity<?> getAssignedAssetsForMovement(
+            @RequestParam(required = false) java.util.UUID userId,
             @RequestParam(required = false) Long employeeId,
             @RequestParam(required = false) Department assigneeDepartment) {
-        if (employeeId != null && assigneeDepartment != null) {
+        if ((userId != null && employeeId != null)
+                || ((userId != null || employeeId != null) && assigneeDepartment != null)) {
             return ResponseEntity.badRequest()
-                    .body("Provide exactly one: employeeId or assigneeDepartment.");
+                    .body("Provide exactly one: userId, employeeId, or assigneeDepartment.");
         }
-        if (employeeId == null && assigneeDepartment == null) {
+        if (userId == null && employeeId == null && assigneeDepartment == null) {
             return ResponseEntity.badRequest()
-                    .body("Provide either employeeId or assigneeDepartment.");
+                    .body("Provide either userId, employeeId, or assigneeDepartment.");
         }
-        List<AssetAssignment> list = employeeId != null
+        List<AssetAssignment> list = userId != null
+                ? repository.findByUser_IdAndStatusNot(userId, RETURNED)
+                : employeeId != null
                 ? repository.findByEmployee_IdAndStatusNot(employeeId, RETURNED)
                 : repository.findByAssigneeDepartmentAndStatusNot(assigneeDepartment, RETURNED);
         return ResponseEntity.ok(list);
@@ -72,10 +80,11 @@ public class AssetAssignmentController {
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody AssetAssignment entity) {
-        resolveRelations(entity);
+        ResponseEntity<String> relationError = resolveRelations(entity);
+        if (relationError != null) return relationError;
         if (!hasValidAssignee(entity)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Specify exactly one: assign to Personnel (employee) or to Department. Send employee: { id } or assigneeDepartment: \"DEPARTMENT_NAME\".");
+                    .body("Specify exactly one: assign to User or to Department. Send user: { id } or assigneeDepartment: \"DEPARTMENT_NAME\".");
         }
         if (entity.getAsset() != null && entity.getAsset().getId() != null
                 && repository.existsByAsset_IdAndStatusNot(entity.getAsset().getId(), RETURNED)) {
@@ -104,10 +113,11 @@ public class AssetAssignmentController {
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody AssetAssignment entity) {
         return repository.findById(id)
                 .map(existing -> {
-                    resolveRelations(entity);
+                    ResponseEntity<String> relationError = resolveRelations(entity);
+                    if (relationError != null) return relationError;
                     if (!hasValidAssignee(entity)) {
                         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                                .body("Specify exactly one: assign to Personnel (employee) or to Department.");
+                                .body("Specify exactly one: assign to User or to Department.");
                     }
                     if (entity.getAsset() != null && entity.getAsset().getId() != null
                             && repository.existsByAsset_IdAndStatusNotAndIdNot(entity.getAsset().getId(), RETURNED, id)) {
@@ -137,25 +147,37 @@ public class AssetAssignmentController {
         return ResponseEntity.noContent().build();
     }
 
-    private void resolveRelations(AssetAssignment entity) {
+    private ResponseEntity<String> resolveRelations(AssetAssignment entity) {
         if (entity.getAsset() != null && entity.getAsset().getId() != null) {
             entity.setAsset(assetRepository.getReferenceById(entity.getAsset().getId()));
+        }
+        if (entity.getUser() != null && entity.getUser().getId() != null) {
+            entity.setUser(userRepository.getReferenceById(entity.getUser().getId()));
+            // If user is explicitly provided, user assignment is authoritative.
+            entity.setEmployee(null);
         }
         if (entity.getEmployee() != null && entity.getEmployee().getId() != null) {
             entity.setEmployee(employeeRepository.getReferenceById(entity.getEmployee().getId()));
         }
         // assigneeDepartment is enum, set from request body as-is
+        return null;
     }
 
-    /** Exactly one of: employee (personnel) or assigneeDepartment (department). */
+    /** Exactly one of: user / employee (legacy) / assigneeDepartment. */
     private boolean hasValidAssignee(AssetAssignment entity) {
+        boolean hasUser = entity.getUser() != null && entity.getUser().getId() != null;
         boolean hasEmployee = entity.getEmployee() != null && entity.getEmployee().getId() != null;
         boolean hasDepartment = entity.getAssigneeDepartment() != null;
-        if (hasEmployee && hasDepartment) return false;
-        return hasEmployee || hasDepartment;
+        int count = (hasUser ? 1 : 0) + (hasEmployee ? 1 : 0) + (hasDepartment ? 1 : 0);
+        return count == 1;
     }
 
     private String describeAssignee(AssetAssignment a) {
+        if (a.getUser() != null) {
+            String name = (a.getUser().getFirstName() != null ? a.getUser().getFirstName() + " " : "")
+                    + (a.getUser().getLastName() != null ? a.getUser().getLastName() : "");
+            return name.isEmpty() ? "user " + a.getUser().getId() : name;
+        }
         if (a.getEmployee() != null) {
             String name = (a.getEmployee().getFirstName() != null ? a.getEmployee().getFirstName() + " " : "") + (a.getEmployee().getLastName() != null ? a.getEmployee().getLastName() : "");
             return name.isEmpty() ? "employee " + a.getEmployee().getId() : name;
@@ -166,6 +188,7 @@ public class AssetAssignmentController {
 
     /** User to notify: employee's linked user when assigning to personnel. */
     private User getNotifyUser(AssetAssignment a) {
+        if (a.getUser() != null) return a.getUser();
         if (a.getEmployee() != null && a.getEmployee().getUser() != null) return a.getEmployee().getUser();
         return null;
     }

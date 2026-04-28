@@ -32,6 +32,8 @@ public class RolePermissionService {
                 Permission.MAINTENANCE_MANAGE,
                 Permission.ATTACHMENT_MANAGE,
                 Permission.COMMENT_MANAGE,
+                Permission.FIELD_TASK_READ,
+                Permission.FIELD_TASK_MANAGE,
                 Permission.MOVEMENT_READ,
                 Permission.MOVEMENT_WRITE,
                 Permission.NOTIFICATION_READ
@@ -40,6 +42,8 @@ public class RolePermissionService {
         // TECHNICIAN: read assets and manage locations/installations
         ROLE_PERMISSIONS.put(Role.TECHNICIAN, Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
                 Permission.LOCATION_MANAGE,
+                Permission.COMMENT_MANAGE,
+                Permission.FIELD_TASK_READ,
                 Permission.ASSET_READ,
                 Permission.NOTIFICATION_READ
         ))));

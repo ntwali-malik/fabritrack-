@@ -2,6 +2,7 @@ package com.example.fabritrack.controller;
 
 import com.example.fabritrack.entity.Location;
 import com.example.fabritrack.entity.Role;
+import com.example.fabritrack.repository.AssetRepository;
 import com.example.fabritrack.repository.LocationRepository;
 import com.example.fabritrack.repository.UserRepository;
 import com.example.fabritrack.service.AuditLogService;
@@ -19,11 +20,16 @@ public class LocationController {
 
     private final LocationRepository repository;
     private final UserRepository userRepository;
+    private final AssetRepository assetRepository;
     private final AuditLogService auditLogService;
 
-    public LocationController(LocationRepository repository, UserRepository userRepository, AuditLogService auditLogService) {
+    public LocationController(LocationRepository repository,
+                              UserRepository userRepository,
+                              AssetRepository assetRepository,
+                              AuditLogService auditLogService) {
         this.repository = repository;
         this.userRepository = userRepository;
+        this.assetRepository = assetRepository;
         this.auditLogService = auditLogService;
     }
 
@@ -81,6 +87,15 @@ public class LocationController {
     }
 
     private ResponseEntity<String> resolveInstallerAndValidate(Location entity) {
+        if (entity.getAsset() != null && entity.getAsset().getId() != null) {
+            if (!assetRepository.existsById(entity.getAsset().getId())) {
+                return ResponseEntity.badRequest().body("asset not found");
+            }
+            entity.setAsset(assetRepository.getReferenceById(entity.getAsset().getId()));
+        } else {
+            entity.setAsset(null);
+        }
+
         if (entity.getInstalledBy() == null || entity.getInstalledBy().getId() == null) {
             entity.setInstalledBy(null);
             return null;

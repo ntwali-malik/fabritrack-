@@ -49,10 +49,6 @@ public class Asset {
     @JoinColumn(name = "category_id")
     private AssetCategory category;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id")
-    private Location location;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Department department;
@@ -120,9 +116,6 @@ public class Asset {
 
     public AssetCategory getCategory() { return category; }
     public void setCategory(AssetCategory category) { this.category = category; }
-
-    public Location getLocation() { return location; }
-    public void setLocation(Location location) { this.location = location; }
 
     public Department getDepartment() { return department; }
     public void setDepartment(Department department) { this.department = department; }

@@ -26,6 +26,7 @@ public class LocationMigrationRunner implements ApplicationRunner {
             jdbcTemplate.execute("ALTER TABLE locations ADD COLUMN IF NOT EXISTS address varchar(255)");
             jdbcTemplate.execute("ALTER TABLE locations ADD COLUMN IF NOT EXISTS installation_date date");
             jdbcTemplate.execute("ALTER TABLE locations ADD COLUMN IF NOT EXISTS installed_by_user_id uuid");
+            jdbcTemplate.execute("ALTER TABLE locations ADD COLUMN IF NOT EXISTS asset_id uuid");
             jdbcTemplate.execute("ALTER TABLE locations ADD COLUMN IF NOT EXISTS amount double precision");
             jdbcTemplate.execute("ALTER TABLE locations ADD COLUMN IF NOT EXISTS payment_date date");
             jdbcTemplate.execute("ALTER TABLE locations ADD COLUMN IF NOT EXISTS payment_status varchar(20)");
@@ -38,6 +39,16 @@ public class LocationMigrationRunner implements ApplicationRunner {
                     "    ALTER TABLE locations " +
                     "    ADD CONSTRAINT fk_locations_installed_by_user " +
                     "    FOREIGN KEY (installed_by_user_id) REFERENCES users(id); " +
+                    "  END IF; " +
+                    "END $$;"
+            );
+            jdbcTemplate.execute(
+                    "DO $$ " +
+                    "BEGIN " +
+                    "  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_locations_asset') THEN " +
+                    "    ALTER TABLE locations " +
+                    "    ADD CONSTRAINT fk_locations_asset " +
+                    "    FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE SET NULL; " +
                     "  END IF; " +
                     "END $$;"
             );

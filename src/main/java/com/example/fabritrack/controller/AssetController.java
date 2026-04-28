@@ -4,7 +4,6 @@ import com.example.fabritrack.entity.Asset;
 import com.example.fabritrack.entity.Department;
 import com.example.fabritrack.repository.AssetCategoryRepository;
 import com.example.fabritrack.repository.AssetRepository;
-import com.example.fabritrack.repository.LocationRepository;
 import com.example.fabritrack.service.AuditLogService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,16 +20,13 @@ public class AssetController {
 
     private final AssetRepository repository;
     private final AssetCategoryRepository categoryRepository;
-    private final LocationRepository locationRepository;
     private final AuditLogService auditLogService;
 
     public AssetController(AssetRepository repository,
                            AssetCategoryRepository categoryRepository,
-                           LocationRepository locationRepository,
                            AuditLogService auditLogService) {
         this.repository = repository;
         this.categoryRepository = categoryRepository;
-        this.locationRepository = locationRepository;
         this.auditLogService = auditLogService;
     }
 
@@ -111,9 +107,6 @@ public class AssetController {
         if (entity.getCategory() != null && entity.getCategory().getId() != null) {
             entity.setCategory(categoryRepository.getReferenceById(entity.getCategory().getId()));
         }
-        if (entity.getLocation() != null && entity.getLocation().getId() != null) {
-            entity.setLocation(locationRepository.getReferenceById(entity.getLocation().getId()));
-        }
     }
 
     /** Asset tag format: FB-DEPTCODE-NNN (e.g. FB-IT-001, FB-FIN-002). */
@@ -124,6 +117,7 @@ public class AssetController {
         // Shortcodes keep the tag readable while still being deterministic.
         return switch (department) {
             case FINANCE -> "FIN";
+            case TECHNICAL -> "TECH";
             default -> department.name();
         };
     }
