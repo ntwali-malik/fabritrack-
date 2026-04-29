@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { getAssets, createAsset, updateAsset, deleteAsset, getNextAssetTag } from "../services/assetService";
 import { getAssetCategories } from "../services/assetCategoryService";
-import { getLocations } from "../services/locationService";
 import AssetScanView from "./AssetScanView";
 import ReportModal from "./ReportModal";
 import { filterListByQuery } from "../utils/validation";
+import { BASE_URL, getHeaders, checkResponse } from "../services/apiClient";
 
 /* ─────────────────────────────────────────────────────────────
    CONSTANTS
@@ -37,7 +37,7 @@ const emptyForm = () => ({
   usefulLifeYears:"", salvageValue:"", status:"AVAILABLE",
   warrantyExpiryDate:"", department:"IT",
   supplierName:"", supplierEmail:"", supplierPhone:"",
-  categoryId:"", locationId:"",
+  categoryId:"",
 });
 
 /* ─────────────────────────────────────────────────────────────
@@ -71,6 +71,24 @@ const css = `
   font-family: var(--fb);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+}
+.ap-root.ap-root--dark {
+  --blue:      #60a5fa;
+  --blue-lt:   #93c5fd;
+  --blue-dk:   #3b82f6;
+  --blue-deep: #1d4ed8;
+  --bg:        #0b1220;
+  --surface:   #111827;
+  --surface2:  #1f2937;
+  --border:    rgba(148,163,184,0.22);
+  --border-lt: rgba(148,163,184,0.16);
+  --ink:       #e5e7eb;
+  --ink2:      #cbd5e1;
+  --ink3:      #94a3b8;
+  --ink4:      #64748b;
+  --success:   #34d399;
+  --danger:    #f87171;
+  --warn:      #fbbf24;
 }
 
 /* ── TOOLBAR ── */
@@ -794,10 +812,9 @@ function getAssetScanUrl(asset) {
 /* ─────────────────────────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────────────────────────── */
-export default function AssetPage({ user, onAssetsChange, searchQuery, readOnly }) {
+export default function AssetPage({ user, onAssetsChange, searchQuery, readOnly, darkMode = false }) {
   const [assets, setAssets]         = useState([]);
   const [categories, setCategories] = useState([]);
-  const [locations, setLocations]   = useState([]);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState("");
 
@@ -822,7 +839,7 @@ export default function AssetPage({ user, onAssetsChange, searchQuery, readOnly 
 
   const filtered = filterListByQuery(assets, searchQuery, [
     "assetTag","name","status","department","supplierName","supplierEmail",
-    a => a.category?.name, a => a.location?.name,
+    a => a.category?.name,
   ]);
 
   const notify = (list) => { if (typeof onAssetsChange === "function") onAssetsChange(list); };
@@ -837,7 +854,6 @@ export default function AssetPage({ user, onAssetsChange, searchQuery, readOnly 
   }, []);
   useEffect(() => {
     getAssetCategories().then(setCategories).catch(() => setCategories([]));
-    getLocations().then(setLocations).catch(() => setLocations([]));
   }, []);
 
   /* Next tag */
@@ -868,7 +884,6 @@ export default function AssetPage({ user, onAssetsChange, searchQuery, readOnly 
       department: a.department||"IT",
       supplierName: a.supplierName||"", supplierEmail: a.supplierEmail||"", supplierPhone: a.supplierPhone||"",
       categoryId: a.category?.id != null ? String(a.category.id) : "",
-      locationId: a.location?.id != null ? String(a.location.id) : "",
     });
     setFormError(""); setDelConf(null); setModalOpen(true);
   };
@@ -890,7 +905,6 @@ export default function AssetPage({ user, onAssetsChange, searchQuery, readOnly 
     };
     if (editingAsset) p.assetTag = form.assetTag?.trim()||null;
     if (form.categoryId?.trim()) p.category = { id: form.categoryId.trim() };
-    if (form.locationId?.trim()) p.location  = { id: form.locationId.trim() };
     return p;
   };
 
@@ -921,7 +935,7 @@ export default function AssetPage({ user, onAssetsChange, searchQuery, readOnly 
   return (
     <>
       <style>{css}</style>
-      <div className="ap-root">
+      <div className={`ap-root${darkMode ? " ap-root--dark" : ""}`}>
 
         {/* Toolbar */}
         <div className="ap-toolbar">
@@ -1123,18 +1137,6 @@ export default function AssetPage({ user, onAssetsChange, searchQuery, readOnly 
                           {categories.map(c => <option key={c.id} value={String(c.id)}>{c.name || `Category ${c.id}`}</option>)}
                         </select>
                       </div>
-                      <div className="ap-field">
-                        <label htmlFor="f-loc">Location</label>
-                        <select id="f-loc" value={form.locationId} onChange={e => set("locationId", e.target.value)}>
-                          <option value="">Select location</option>
-                          {locations.map(l => (
-                            <option key={l.id} value={String(l.id)}>
-                              {l.name || `Location ${l.id}`}
-                              {l.building || l.floor || l.room ? ` — ${[l.building,l.floor,l.room].filter(Boolean).join(", ")}` : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
                     </div>
                   </div>
 
@@ -1311,6 +1313,35 @@ export default function AssetPage({ user, onAssetsChange, searchQuery, readOnly 
         reportTitle="Asset Report"
         generatedBy={user ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "—" : "—"}
         generatedAt={new Date().toISOString()}
+        onDownloadPdf={() => {
+          const payload = {
+            department: rDept || null,
+            status: rStatus || null,
+            supplier: null,
+            purchaseDateFrom: null,
+            purchaseDateTo: null,
+            search: null,
+            logoUrl: null,
+          };
+
+          return fetch(`${BASE_URL}/api/assets/reports/pdf`, {
+            method: "POST",
+            headers: getHeaders(true, "application/json"),
+            body: JSON.stringify(payload),
+          })
+            .then(checkResponse)
+            .then((res) => res.blob())
+            .then((blob) => {
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "fabritrack-assets-report.pdf";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+            });
+        }}
         renderFilters={() => (
           <>
             <div className="ap-field">

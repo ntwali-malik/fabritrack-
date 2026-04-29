@@ -6,7 +6,7 @@ import {
   deleteAssetAssignment,
 } from "../services/assetAssignmentService";
 import { getAssets } from "../services/assetService";
-import { getEmployees } from "../services/employeeService";
+import { getUsers } from "../services/userService";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import ReportModal from "./ReportModal";
 import { filterListByQuery } from "../utils/validation";
@@ -43,7 +43,7 @@ const emptyForm = () => ({
   assetId: "",
   assetIds: [],
   assigneeType: ASSIGNEE_TYPE.PERSONNEL,
-  employeeId: "",
+  assigneeUserId: "",
   assigneeDepartment: "",
 });
 
@@ -81,7 +81,7 @@ const IconClose = () => (
 export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQuery }) {
   const [assignments, setAssignments] = useState([]);
   const [assets, setAssets] = useState([]);
-  const [employees, setEmployees] = useState([]);
+  const [assignUsers, setAssignUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -112,12 +112,15 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
   useEffect(() => {
     notify(undefined);
     loadAssignments();
-    Promise.all([getAssets(), getEmployees()])
-      .then(([assetList, employeeList]) => {
-        setAssets(assetList || []);
-        setEmployees(employeeList || []);
+    getAssets()
+      .then((assetList) => setAssets(assetList || []))
+      .catch(() => setAssets([]));
+    getUsers()
+      .then((userList) => {
+        const u = Array.isArray(userList) ? userList : [];
+        setAssignUsers(u.filter((x) => x.status !== "PENDING_APPROVAL"));
       })
-      .catch(() => {});
+      .catch(() => setAssignUsers([]));
   }, []);
 
   const openAdd = () => {
@@ -129,7 +132,7 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
       assetId: "",
       assetIds: [],
       assigneeType: ASSIGNEE_TYPE.PERSONNEL,
-      employeeId: "",
+      assigneeUserId: "",
       assigneeDepartment: "",
     });
     setFormError("");
@@ -139,11 +142,13 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
 
   const openEdit = (a) => {
     setEditingAssignment(a);
-    const assigneeType = a.employee?.id != null
-      ? ASSIGNEE_TYPE.PERSONNEL
-      : a.assigneeDepartment != null
-        ? ASSIGNEE_TYPE.DEPARTMENT
-        : ASSIGNEE_TYPE.PERSONNEL;
+    const assigneeType =
+      a.user?.id != null || a.employee?.id != null
+        ? ASSIGNEE_TYPE.PERSONNEL
+        : a.assigneeDepartment != null
+          ? ASSIGNEE_TYPE.DEPARTMENT
+          : ASSIGNEE_TYPE.PERSONNEL;
+    const personnelId = a.user?.id ?? a.employee?.user?.id ?? a.employee?.id;
     setForm({
       assignedDate: formatDate(a.assignedDate) === "—" ? "" : formatDate(a.assignedDate),
       returnDate: formatDate(a.returnDate) === "—" ? "" : formatDate(a.returnDate),
@@ -151,7 +156,7 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
       assetId: a.asset?.id ?? "",
       assetIds: a.asset?.id ? [a.asset.id] : [],
       assigneeType,
-      employeeId: a.employee?.id ?? "",
+      assigneeUserId: personnelId != null ? String(personnelId) : "",
       assigneeDepartment: a.assigneeDepartment ?? "",
     });
     setFormError("");
@@ -179,8 +184,8 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
         setFormError("Please select an asset.");
         return;
       }
-      if (!form.employeeId) {
-        setFormError("Please select personnel (employee).");
+      if (!form.assigneeUserId) {
+        setFormError("Please select a user.");
         return;
       }
     } else {
@@ -205,8 +210,8 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
         status: form.status,
         asset: { id: form.assetId },
       };
-      if (form.assigneeType === ASSIGNEE_TYPE.PERSONNEL && form.employeeId) {
-        payload.employee = { id: form.employeeId };
+      if (form.assigneeType === ASSIGNEE_TYPE.PERSONNEL && form.assigneeUserId) {
+        payload.user = { id: form.assigneeUserId };
       } else if (form.assigneeType === ASSIGNEE_TYPE.DEPARTMENT && form.assigneeDepartment) {
         payload.assigneeDepartment = form.assigneeDepartment;
       }
@@ -283,13 +288,19 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
   };
 
   const assetLabel = (asset) => asset?.name || asset?.assetTag || asset?.id || "—";
-  const employeeLabel = (emp) => {
+  const userDisplayLabel = (u) => {
+    if (!u) return "—";
+    if (u.firstName || u.lastName) return [u.firstName, u.lastName].filter(Boolean).join(" ");
+    return u.email || u.id || "—";
+  };
+  const legacyEmployeeLabel = (emp) => {
     if (!emp) return "—";
     if (emp.firstName || emp.lastName) return [emp.firstName, emp.lastName].filter(Boolean).join(" ");
     return emp.employeeNumber || emp.email || emp.id || "—";
   };
   const assigneeLabel = (a) => {
-    if (a.employee?.id != null) return employeeLabel(a.employee);
+    if (a.user?.id != null) return userDisplayLabel(a.user);
+    if (a.employee?.id != null) return legacyEmployeeLabel(a.employee);
     if (a.assigneeDepartment) return `Department: ${a.assigneeDepartment}`;
     return "—";
   };
@@ -321,7 +332,6 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Assigned date</th>
                   <th>Return date</th>
                   <th>Status</th>
@@ -333,7 +343,6 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
               <tbody>
                 {filteredAssignments.map((a) => (
                   <tr key={a.id} className="t-row">
-                    <td className="td-id">{a.id}</td>
                     <td>{formatDate(a.assignedDate)}</td>
                     <td>{formatDate(a.returnDate)}</td>
                     <td>
@@ -359,7 +368,7 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
                 ))}
                 {filteredAssignments.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={7} className="assignment-empty">
+                    <td colSpan={6} className="assignment-empty">
                       No assignments yet. Click &quot;Add Assignment&quot; to create one.
                     </td>
                   </tr>
@@ -405,7 +414,7 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
                           </svg>
                         </span>
                         <span className="assignee-toggle-label">Personnel</span>
-                        <span className="assignee-toggle-desc">Assign to an employee</span>
+                        <span className="assignee-toggle-desc">Assign to a system user</span>
                       </button>
                       <button
                         type="button"
@@ -426,24 +435,24 @@ export default function AssetAssignmentPage({ user, onAssignmentsChange, searchQ
                 </div>
                 {form.assigneeType === ASSIGNEE_TYPE.PERSONNEL ? (
                   <div className="assignment-field assignment-field--full">
-                    <label htmlFor="assignment-employee">Personnel (Employee) *</label>
+                    <label htmlFor="assignment-user">User *</label>
                     <select
-                      id="assignment-employee"
-                      value={form.employeeId}
-                      onChange={(e) => handleFormChange("employeeId", e.target.value)}
+                      id="assignment-user"
+                      value={form.assigneeUserId}
+                      onChange={(e) => handleFormChange("assigneeUserId", e.target.value)}
                       required={form.assigneeType === ASSIGNEE_TYPE.PERSONNEL}
                     >
-                      <option value="">Select employee</option>
-                      {employees.filter((e) => e.status === "ACTIVE" || !e.status).map((emp) => (
-                        <option key={emp.id} value={emp.id}>
-                          {employeeLabel(emp)}
-                          {emp.employeeNumber ? ` (${emp.employeeNumber})` : ""}
-                          {emp.department ? ` · ${emp.department}` : ""}
+                      <option value="">Select user</option>
+                      {assignUsers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {userDisplayLabel(u)}
+                          {u.email ? ` (${u.email})` : ""}
+                          {u.role ? ` · ${u.role}` : ""}
                         </option>
                       ))}
                     </select>
-                    {employees.length === 0 && (
-                      <span className="entity-field-hint">No employees yet. Add employees first to assign to personnel.</span>
+                    {assignUsers.length === 0 && (
+                      <span className="entity-field-hint">No users available. Add or approve users under User Management.</span>
                     )}
                   </div>
                 ) : (

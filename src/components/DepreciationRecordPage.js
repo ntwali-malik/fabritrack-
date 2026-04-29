@@ -22,6 +22,7 @@ import DeleteConfirmModal from "./DeleteConfirmModal";
 import ReportModal from "./ReportModal";
 import { filterListByQuery } from "../utils/validation";
 import "./EntityPage.css";
+import "./DepreciationRecordPage.css";
 
 const METHOD_OPTIONS = [
   { value: "STRAIGHT_LINE", label: "Straight line" },
@@ -60,6 +61,10 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
   const [formError, setFormError] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document === "undefined") return false;
+    return document.querySelector(".shell")?.getAttribute("data-theme") === "dark";
+  });
 
   const notify = (data) => { if (typeof onDataChange === "function") onDataChange(data); };
 
@@ -76,6 +81,21 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
     notify(undefined);
     load();
     getAssets().then((a) => setAssets(a || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const shellEl = document.querySelector(".shell");
+    if (!shellEl) return undefined;
+
+    const updateTheme = () => {
+      setIsDark(shellEl.getAttribute("data-theme") === "dark");
+    };
+    updateTheme();
+
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(shellEl, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
   }, []);
 
   const openAdd = () => {
@@ -236,9 +256,28 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
   }, [list]);
 
   const METHOD_COLORS = ["#1a56ff", "#0e9f6e", "#f97316", "#6366f1", "#0ea5e9"];
+  const chartTheme = isDark
+    ? {
+        grid: "rgba(148,163,184,0.22)",
+        tick: "#94a3b8",
+        bar: "#3b82f6",
+        pieStroke: "#0f172a",
+        tooltipBg: "#0f172a",
+        tooltipBorder: "rgba(148,163,184,0.35)",
+        tooltipText: "#e2e8f0",
+      }
+    : {
+        grid: "#e2e8f0",
+        tick: "#94a3b8",
+        bar: "#1a56ff",
+        pieStroke: "#ffffff",
+        tooltipBg: "#ffffff",
+        tooltipBorder: "#e2e8f0",
+        tooltipText: "#0f172a",
+      };
 
   return (
-    <>
+    <div className="depr-page">
       {analytics.totalRecords > 0 && (
         <div className="entity-analytics">
           <div className="entity-kpi-row">
@@ -282,24 +321,24 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
               </div>
               <div className="entity-analytics-body">
                 {analytics.yearData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ResponsiveContainer width="100%" height={220} minWidth={0}>
                     <BarChart
                       data={analytics.yearData}
                       margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"
-                        stroke="#e2e8f0"
+                        stroke={chartTheme.grid}
                         vertical={false}
                       />
                       <XAxis
                         dataKey="year"
-                        tick={{ fill: "#94a3b8", fontSize: 11 }}
+                        tick={{ fill: chartTheme.tick, fontSize: 11 }}
                         axisLine={false}
                         tickLine={false}
                       />
                       <YAxis
-                        tick={{ fill: "#94a3b8", fontSize: 11 }}
+                        tick={{ fill: chartTheme.tick, fontSize: 11 }}
                         axisLine={false}
                         tickLine={false}
                       />
@@ -307,10 +346,11 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
                         formatter={(value) => currency(Number(value))}
                         labelFormatter={(label) => `Year ${label}`}
                         contentStyle={{
-                          background: "#ffffff",
-                          border: "1px solid #e2e8f0",
+                          background: chartTheme.tooltipBg,
+                          border: `1px solid ${chartTheme.tooltipBorder}`,
                           borderRadius: 8,
                           fontSize: 12,
+                          color: chartTheme.tooltipText,
                         }}
                       />
                       <Bar
@@ -318,7 +358,7 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
                         name="Depreciation"
                         radius={[6, 6, 0, 0]}
                         maxBarSize={32}
-                        fill="#1a56ff"
+                        fill={chartTheme.bar}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -353,7 +393,7 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
                           innerRadius={55}
                           outerRadius={80}
                           paddingAngle={analytics.methodData.length ? 2 : 0}
-                          stroke="#ffffff"
+                          stroke={chartTheme.pieStroke}
                           strokeWidth={2}
                         >
                           {analytics.methodData.map((entry, index) => (
@@ -371,10 +411,11 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
                             name,
                           ]}
                           contentStyle={{
-                            background: "#ffffff",
-                            border: "1px solid #e2e8f0",
+                            background: chartTheme.tooltipBg,
+                            border: `1px solid ${chartTheme.tooltipBorder}`,
                             borderRadius: 8,
                             fontSize: 12,
+                            color: chartTheme.tooltipText,
                           }}
                         />
                       </PieChart>
@@ -552,6 +593,6 @@ export default function DepreciationRecordPage({ user, onDataChange, searchQuery
           rows: list.map((r) => ({ id: r.id, year: r.year != null ? r.year : "—", method: r.method || "—", amount: r.amount != null ? r.amount : "—", remainingValue: r.remainingValue != null ? r.remainingValue : "—", asset: assetLabel(r.asset) })),
         })}
       />
-    </>
+    </div>
   );
 }

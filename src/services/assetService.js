@@ -1,6 +1,6 @@
 /**
  * Asset API service - /api/assets
- * Asset id is UUID. Category and location are sent as { id } (UUID or Long); backend resolves relations.
+ * Asset id is UUID. Category is sent as { id } (Long); backend resolves relations.
  * On create: backend sets currentValue from purchaseCost when purchaseCost is not null.
  * On update: backend preserves createdAt and currentValue from existing asset.
  */
@@ -52,8 +52,8 @@ export function getNextAssetTag(department) {
 
 /**
  * POST /api/assets - Create asset.
- * Backend resolves category/location by id. If purchaseCost is set, backend sets currentValue = purchaseCost.
- * @param {Object} asset - assetTag, name, description?, serialNumber?, purchaseDate?, purchaseCost?, currentValue?, usefulLifeYears?, salvageValue?, status?, warrantyExpiryDate?, department, category?: { id }, location?: { id }
+ * Backend resolves category by id. If purchaseCost is set, backend sets currentValue = purchaseCost.
+ * @param {Object} asset - assetTag, name, description?, serialNumber?, purchaseDate?, purchaseCost?, currentValue?, usefulLifeYears?, salvageValue?, status?, warrantyExpiryDate?, department, category?: { id }
  * @returns {Promise<Object>} Created Asset (201)
  */
 export function createAsset(asset) {
@@ -68,9 +68,9 @@ export function createAsset(asset) {
 
 /**
  * PUT /api/assets/:id - Update asset.
- * Backend preserves createdAt and currentValue from existing asset; resolves category/location by id.
+ * Backend preserves createdAt and currentValue from existing asset; resolves category by id.
  * @param {string} id - Asset UUID
- * @param {Object} asset - Asset fields (category?: { id }, location?: { id }). currentValue is ignored (backend keeps existing).
+ * @param {Object} asset - Asset fields (category?: { id }). currentValue is ignored (backend keeps existing).
  * @returns {Promise<Object>} Updated Asset
  */
 export function updateAsset(id, asset) {

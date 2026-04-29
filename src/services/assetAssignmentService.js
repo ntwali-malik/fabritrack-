@@ -1,10 +1,9 @@
 /**
  * Asset Assignment API service - /api/asset-assignments
  * Create/update: send asset: { id } and exactly one of:
- *   - employee: { id } for personnel assignment
+ *   - user: { id } for personnel assignment (system user)
  *   - assigneeDepartment: "DEPARTMENT_NAME" for department assignment
- *   - user: { id } (legacy) for user assignment
- * Backend resolves relations. On create, notification is sent when assignee is a user or employee with linked user.
+ * Backend resolves relations. On create, notification is sent to the assigned user when applicable.
  */
 
 import { BASE_URL, getHeaders, checkResponse } from './apiClient';
@@ -83,12 +82,13 @@ export function deleteAssetAssignment(id) {
 /**
  * GET /api/asset-assignments/assigned-assets - Active assignments for movement (by personnel or department).
  * Use for "Move by Personnel" or "Move by Department" to list assets that can be moved.
- * @param {{ employeeId?: number, assigneeDepartment?: string }} params - Exactly one of employeeId or assigneeDepartment
- * @returns {Promise<Array>} List of AssetAssignment (each includes asset, employee, assigneeDepartment)
+ * @param {{ userId?: string, employeeId?: string|number, assigneeDepartment?: string }} params - Exactly one of userId, employeeId (legacy), or assigneeDepartment
+ * @returns {Promise<Array>} List of AssetAssignment (each includes asset, user, assigneeDepartment)
  */
 export function getAssignedAssetsForMovement(params) {
-  const { employeeId, assigneeDepartment } = params || {};
+  const { userId, employeeId, assigneeDepartment } = params || {};
   const search = new URLSearchParams();
+  if (userId != null && userId !== '') search.set('userId', String(userId));
   if (employeeId != null) search.set('employeeId', String(employeeId));
   if (assigneeDepartment != null) search.set('assigneeDepartment', assigneeDepartment);
   const qs = search.toString();

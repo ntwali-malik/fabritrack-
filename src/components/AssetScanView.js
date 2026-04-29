@@ -40,7 +40,7 @@ export function AssetScanView({ asset, onClose, showClose = true, preview = fals
     {
       label: "Location",
       value: asset.location
-        ? [asset.location.name, asset.location.building, asset.location.floor, asset.location.room]
+        ? [asset.location.name, asset.location.address]
             .filter(Boolean)
             .join(", ") || "—"
         : "—",

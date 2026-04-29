@@ -6,7 +6,7 @@ import {
   deleteAssetMovement,
 } from "../services/assetMovementService";
 import { getAssets } from "../services/assetService";
-import { getEmployees } from "../services/employeeService";
+import { getUsers } from "../services/userService";
 import { getAssignedAssetsForMovement } from "../services/assetAssignmentService";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import ReportModal from "./ReportModal";
@@ -15,7 +15,6 @@ import "./EntityPage.css";
 import "./AssetAssignmentPage.css";
 
 const MOVE_TYPE = {
-  ASSET: "asset",
   PERSONNEL: "personnel",
   DEPARTMENT: "department",
 };
@@ -33,14 +32,13 @@ const DEPARTMENT_OPTIONS = [
 ];
 
 const emptyForm = () => ({
-  moveType: MOVE_TYPE.ASSET,
+  moveType: MOVE_TYPE.PERSONNEL,
   fromLocationName: "",
   toLocationName: "",
   movedAt: "",
   reason: "",
   assetId: "",
-  assetIds: [],
-  employeeId: "",
+  assigneeUserId: "",
   assigneeDepartment: "",
 });
 
@@ -63,16 +61,16 @@ const IconClose = () => (
 );
 
 const assetLabel = (a) => (a && (a.name || a.assetTag || a.id)) || "—";
-const employeeLabel = (emp) => {
-  if (!emp) return "—";
-  if (emp.firstName || emp.lastName) return [emp.firstName, emp.lastName].filter(Boolean).join(" ");
-  return emp.employeeNumber || emp.email || emp.id || "—";
+const userDisplayLabel = (u) => {
+  if (!u) return "—";
+  if (u.firstName || u.lastName) return [u.firstName, u.lastName].filter(Boolean).join(" ");
+  return u.email || u.id || "—";
 };
 
 export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
   const [list, setList] = useState([]);
   const [assets, setAssets] = useState([]);
-  const [employees, setEmployees] = useState([]);
+  const [assignUsers, setAssignUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -84,6 +82,7 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
   const [reportOpen, setReportOpen] = useState(false);
   const [assignedAssignments, setAssignedAssignments] = useState([]);
   const [loadingAssigned, setLoadingAssigned] = useState(false);
+  const [alertMessage, setAlertMessage] = useState(null);
 
   const notify = (data) => { if (typeof onDataChange === "function") onDataChange(data); };
 
@@ -99,20 +98,23 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
   useEffect(() => {
     notify(undefined);
     load();
-    Promise.all([getAssets(), getEmployees()])
-      .then(([a, e]) => {
-        setAssets(a || []);
-        setEmployees(e || []);
+    getAssets()
+      .then((a) => setAssets(a || []))
+      .catch(() => setAssets([]));
+    getUsers()
+      .then((list) => {
+        const u = Array.isArray(list) ? list : [];
+        setAssignUsers(u.filter((x) => x.status !== "PENDING_APPROVAL"));
       })
-      .catch(() => {});
+      .catch(() => setAssignUsers([]));
   }, []);
 
   useEffect(() => {
     if (!modalOpen) return;
-    if (form.moveType === MOVE_TYPE.PERSONNEL && form.employeeId) {
+    if (form.moveType === MOVE_TYPE.PERSONNEL && form.assigneeUserId) {
       setLoadingAssigned(true);
       setAssignedAssignments([]);
-      getAssignedAssetsForMovement({ employeeId: Number(form.employeeId) })
+      getAssignedAssetsForMovement({ userId: form.assigneeUserId })
         .then((data) => setAssignedAssignments(Array.isArray(data) ? data : []))
         .catch(() => setAssignedAssignments([]))
         .finally(() => setLoadingAssigned(false));
@@ -126,7 +128,7 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
     } else {
       setAssignedAssignments([]);
     }
-  }, [modalOpen, form.moveType, form.employeeId, form.assigneeDepartment]);
+  }, [modalOpen, form.moveType, form.assigneeUserId, form.assigneeDepartment]);
 
   const openAdd = () => {
     setEditing(null);
@@ -134,6 +136,7 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
     setFormError("");
     setDeleteConfirm(null);
     setAssignedAssignments([]);
+    setAlertMessage(null);
     setModalOpen(true);
   };
 
@@ -141,7 +144,7 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
     setEditing(row);
     setForm({
       ...emptyForm(),
-      moveType: MOVE_TYPE.ASSET,
+      moveType: MOVE_TYPE.PERSONNEL,
       fromLocationName: row.fromLocationName || "",
       toLocationName: row.toLocationName || "",
       movedAt: row.movedAt ? String(row.movedAt).slice(0, 19) : "",
@@ -151,6 +154,7 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
     setFormError("");
     setDeleteConfirm(null);
     setAssignedAssignments([]);
+    setAlertMessage(null);
     setModalOpen(true);
   };
 
@@ -160,6 +164,7 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
     setFormError("");
     setDeleteConfirm(null);
     setAssignedAssignments([]);
+    setAlertMessage(null);
   };
 
   const cancelDelete = () => setDeleteConfirm(null);
@@ -167,19 +172,11 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
   const handleChange = (field, value) => {
     setForm((p) => ({ ...p, [field]: value }));
     if (field === "moveType") {
-      setForm((p) => ({ ...p, employeeId: "", assigneeDepartment: "", assetIds: [], assetId: "" }));
+      setForm((p) => ({ ...p, assigneeUserId: "", assigneeDepartment: "", assetId: "" }));
     }
-    if (field === "employeeId" || field === "assigneeDepartment") {
-      setForm((p) => ({ ...p, assetIds: [] }));
+    if (field === "assigneeUserId" || field === "assigneeDepartment") {
+      setForm((p) => ({ ...p, assetId: "" }));
     }
-  };
-
-  const toggleAssetId = (assetId) => {
-    setForm((prev) => {
-      const ids = Array.isArray(prev.assetIds) ? prev.assetIds : [];
-      const has = ids.includes(assetId);
-      return { ...prev, assetIds: has ? ids.filter((x) => x !== assetId) : [...ids, assetId] };
-    });
   };
 
   const filteredList = filterListByQuery(list, searchQuery, [
@@ -196,6 +193,10 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
     const to = form.toLocationName?.trim();
     if (!from) { setFormError("From location is required."); return; }
     if (!to) { setFormError("To location is required."); return; }
+    if (from.toLowerCase() === to.toLowerCase()) {
+      setFormError("From and To location cannot be the same.");
+      return;
+    }
 
     const basePayload = {
       fromLocationName: from,
@@ -213,43 +214,32 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
           notify(list.map((x) => (x.id === saved.id ? saved : x)));
           closeModal();
         })
-        .catch((err) => setFormError(err.message || "Failed to update"))
-        .finally(() => setSaving(false));
-      return;
-    }
-
-    if (form.moveType === MOVE_TYPE.ASSET) {
-      if (!form.assetId) { setFormError("Select an asset."); return; }
-      setSaving(true);
-      createAssetMovement({ ...basePayload, asset: { id: form.assetId } })
-        .then((saved) => {
-          setList((prev) => [...prev, saved]);
-          notify([...list, saved]);
-          closeModal();
+        .catch((err) => {
+          const msg = err.message || "Failed to update movement";
+          setAlertMessage(msg);
+          setFormError("");
         })
-        .catch((err) => setFormError(err.message || "Failed to create movement"))
         .finally(() => setSaving(false));
       return;
     }
 
-    const assetIds = Array.isArray(form.assetIds) ? form.assetIds : [];
-    if (assetIds.length === 0) {
-      setFormError(form.moveType === MOVE_TYPE.PERSONNEL
-        ? "Select at least one assigned asset to move."
-        : "Select at least one assigned asset to move.");
+    if (!form.assetId) {
+      setFormError("Select an asset to move.");
       return;
     }
 
     setSaving(true);
-    Promise.all(
-      assetIds.map((assetId) => createAssetMovement({ ...basePayload, asset: { id: assetId } })),
-    )
-      .then((savedList) => {
-        setList((prev) => [...prev, ...savedList]);
-        notify([...list, ...savedList]);
+    createAssetMovement({ ...basePayload, asset: { id: form.assetId } })
+      .then((saved) => {
+        setList((prev) => [...prev, saved]);
+        notify([...list, saved]);
         closeModal();
       })
-      .catch((err) => setFormError(err.message || "Failed to create one or more movements"))
+      .catch((err) => {
+        const msg = err.message || "Failed to create movement";
+        setAlertMessage(msg);
+        setFormError("");
+      })
       .finally(() => setSaving(false));
   };
 
@@ -265,10 +255,9 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
       .catch((e) => setFormError(e.message || "Failed to delete"));
   };
 
-  const isAssetMode = form.moveType === MOVE_TYPE.ASSET;
   const isPersonnelMode = form.moveType === MOVE_TYPE.PERSONNEL;
   const isDepartmentMode = form.moveType === MOVE_TYPE.DEPARTMENT;
-  const showSingleAsset = isAssetMode || editing;
+  const showSingleAsset = true;
 
   return (
     <>
@@ -288,7 +277,6 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>From</th>
                   <th>To</th>
                   <th>Moved at</th>
@@ -300,7 +288,6 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
               <tbody>
                 {filteredList.map((row) => (
                   <tr key={row.id} className="t-row">
-                    <td className="td-id">{row.id}</td>
                     <td>{row.fromLocationName || "—"}</td>
                     <td>{row.toLocationName || "—"}</td>
                     <td>{formatDateTime(row.movedAt)}</td>
@@ -314,7 +301,7 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
                   </tr>
                 ))}
                 {filteredList.length === 0 && !loading && (
-                  <tr><td colSpan={7} className="entity-empty">No movements yet. Click &quot;Add Movement&quot; to create one.</td></tr>
+                  <tr><td colSpan={6} className="entity-empty">No movements yet. Click &quot;Add Movement&quot; to create one.</td></tr>
                 )}
               </tbody>
             </table>
@@ -324,12 +311,12 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
 
       {modalOpen && (
         <div className="entity-modal-overlay" onClick={closeModal}>
-          <div className="entity-modal" onClick={(ev) => ev.stopPropagation()} style={{ maxWidth: 560 }}>
+          <div className="entity-modal movement-modal" onClick={(ev) => ev.stopPropagation()} style={{ maxWidth: 760 }}>
             <div className="entity-modal-header">
               <h2 className="entity-modal-title">{editing ? "Edit Movement" : "Add Movement"}</h2>
               <button type="button" className="entity-modal-close" aria-label="Close" onClick={closeModal}><IconClose /></button>
             </div>
-            <form onSubmit={handleSubmit} className="entity-modal-body">
+            <form onSubmit={handleSubmit} className="entity-modal-body movement-modal-body">
               {formError && <p className="entity-error">{formError}</p>}
 
               {!editing && (
@@ -340,25 +327,11 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
                       <div
                         className="assignee-toggle-thumb"
                         style={{
-                          width: "calc(33.333% - 6px)",
-                          transform: isPersonnelMode ? "translateX(100%)" : isDepartmentMode ? "translateX(200%)" : "translateX(0)",
+                          width: "calc(50% - 4px)",
+                          transform: isPersonnelMode ? "translateX(0)" : "translateX(100%)",
                         }}
                         aria-hidden
                       />
-                      <button
-                        type="button"
-                        className={`assignee-toggle-option ${isAssetMode ? "assignee-toggle-option--active" : ""}`}
-                        onClick={() => handleChange("moveType", MOVE_TYPE.ASSET)}
-                      >
-                        <span className="assignee-toggle-icon assignee-toggle-icon--personnel" aria-hidden>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                            <path d="M3 9h18M9 21V9" />
-                          </svg>
-                        </span>
-                        <span className="assignee-toggle-label">Asset</span>
-                        <span className="assignee-toggle-desc">Any asset</span>
-                      </button>
                       <button
                         type="button"
                         className={`assignee-toggle-option ${isPersonnelMode ? "assignee-toggle-option--active" : ""}`}
@@ -370,7 +343,7 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
                           </svg>
                         </span>
                         <span className="assignee-toggle-label">Personnel</span>
-                        <span className="assignee-toggle-desc">Employee&apos;s assigned assets</span>
+                        <span className="assignee-toggle-desc">User&apos;s assigned assets</span>
                       </button>
                       <button
                         type="button"
@@ -392,17 +365,17 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
 
               {isPersonnelMode && !editing && (
                 <div className="assignment-field assignment-field--full" style={{ marginBottom: 12 }}>
-                  <label htmlFor="movement-employee">Employee *</label>
+                  <label htmlFor="movement-user">User *</label>
                   <select
-                    id="movement-employee"
-                    value={form.employeeId}
-                    onChange={(e) => handleChange("employeeId", e.target.value)}
+                    id="movement-user"
+                    value={form.assigneeUserId}
+                    onChange={(e) => handleChange("assigneeUserId", e.target.value)}
                   >
-                    <option value="">Select employee</option>
-                    {(employees || []).filter((e) => e.status === "ACTIVE" || !e.status).map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {employeeLabel(emp)}
-                        {emp.employeeNumber ? ` (${emp.employeeNumber})` : ""}
+                    <option value="">Select user</option>
+                    {assignUsers.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {userDisplayLabel(u)}
+                        {u.email ? ` (${u.email})` : ""}
                       </option>
                     ))}
                   </select>
@@ -425,34 +398,28 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
                 </div>
               )}
 
-              {(isPersonnelMode || isDepartmentMode) && !editing && (form.employeeId || form.assigneeDepartment) && (
+              {(isPersonnelMode || isDepartmentMode) && !editing && (form.assigneeUserId || form.assigneeDepartment) && (
                 <div className="assignment-field assignment-field--full" style={{ marginBottom: 16 }}>
-                  <label>Assigned assets to move *</label>
+                  <label htmlFor="movement-asset">Asset *</label>
                   {loadingAssigned ? (
                     <p className="entity-field-hint">Loading assigned assets…</p>
                   ) : assignedAssignments.length === 0 ? (
                     <p className="entity-field-hint">No assigned assets for this selection. Assign assets first from the Assignments page.</p>
                   ) : (
-                    <div className="assignment-asset-multi">
-                      {assignedAssignments.map((a) => {
-                        const asset = a.asset;
-                        if (!asset || !asset.id) return null;
-                        const checked = Array.isArray(form.assetIds) && form.assetIds.includes(asset.id);
-                        return (
-                          <label
-                            key={a.id}
-                            className={`assignment-asset-pill${checked ? " assignment-asset-pill--selected" : ""}`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggleAssetId(asset.id)}
-                            />
-                            <span className="assignment-asset-pill-main">{assetLabel(asset)}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
+                    <select
+                      id="movement-asset"
+                      value={form.assetId}
+                      onChange={(e) => handleChange("assetId", e.target.value)}
+                    >
+                      <option value="">Select assigned asset</option>
+                      {assignedAssignments
+                        .filter((a) => a.asset && a.asset.id)
+                        .map((a) => (
+                          <option key={a.id} value={a.asset.id}>
+                            {assetLabel(a.asset)}
+                          </option>
+                        ))}
+                    </select>
                   )}
                 </div>
               )}
@@ -481,9 +448,6 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
                       <option value="">Select asset</option>
                       {assets.map((a) => <option key={a.id} value={a.id}>{assetLabel(a)}</option>)}
                     </select>
-                    {isAssetMode && !editing && (
-                      <span className="entity-field-hint">Move any asset (assigned or unassigned).</span>
-                    )}
                   </div>
                 )}
               </div>
@@ -500,9 +464,7 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
                     ? "Saving…"
                     : editing
                       ? "Update"
-                      : (isPersonnelMode || isDepartmentMode) && (form.assetIds || []).length > 0
-                        ? `Move ${form.assetIds.length} asset(s)`
-                        : "Create"}
+                      : "Create"}
                 </button>
               </div>
             </form>
@@ -517,6 +479,26 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
         title="Delete movement?"
         message="Are you sure you want to delete this movement? This action cannot be undone."
       />
+      {alertMessage && (
+        <div className="assignment-alert-overlay" onClick={() => setAlertMessage(null)}>
+          <div className="assignment-alert-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="assignment-alert-icon-wrap">
+              <svg className="assignment-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <h3 className="assignment-alert-title">Movement blocked</h3>
+            <p className="assignment-alert-message">{alertMessage}</p>
+            <div className="assignment-alert-actions">
+              <button type="button" className="assignment-btn assignment-btn--primary" onClick={() => setAlertMessage(null)}>
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <ReportModal
         open={reportOpen}
         onClose={() => setReportOpen(false)}
@@ -525,8 +507,8 @@ export default function AssetMovementPage({ user, onDataChange, searchQuery }) {
         generatedAt={new Date().toISOString()}
         renderFilters={() => null}
         getReportData={() => ({
-          columns: [{ key: "id", label: "ID" }, { key: "fromLocationName", label: "From" }, { key: "toLocationName", label: "To" }, { key: "movedAt", label: "Moved at" }, { key: "reason", label: "Reason" }, { key: "asset", label: "Asset" }],
-          rows: list.map((r) => ({ id: r.id, fromLocationName: r.fromLocationName || "—", toLocationName: r.toLocationName || "—", movedAt: formatDateTime(r.movedAt), reason: r.reason || "—", asset: assetLabel(r.asset) })),
+          columns: [{ key: "fromLocationName", label: "From" }, { key: "toLocationName", label: "To" }, { key: "movedAt", label: "Moved at" }, { key: "reason", label: "Reason" }, { key: "asset", label: "Asset" }],
+          rows: list.map((r) => ({ fromLocationName: r.fromLocationName || "—", toLocationName: r.toLocationName || "—", movedAt: formatDateTime(r.movedAt), reason: r.reason || "—", asset: assetLabel(r.asset) })),
         })}
       />
     </>

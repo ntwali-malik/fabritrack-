@@ -1,0 +1,167 @@
+.req-modal {
+  width: min(1240px, 96vw);
+}
+
+.req-form-intro {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid #dbe5f0;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f3f7fc 100%);
+}
+
+.req-form-intro h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.req-form-intro p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #5b6b7f;
+}
+
+.req-top-grid {
+  gap: 14px 14px;
+  margin-bottom: 8px;
+}
+
+.req-top-grid .entity-field textarea {
+  min-height: 62px;
+}
+
+.req-items-header {
+  margin-top: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #dbe4ee;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(180deg, #f8fbff 0%, #f2f7fd 100%);
+}
+
+.req-items-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #0f172a;
+}
+
+.req-items-cards {
+  display: grid;
+  gap: 10px;
+}
+
+.req-item-card {
+  border: 1px solid #dbe5f0;
+  border-radius: 12px;
+  background: #fbfdff;
+  padding: 10px;
+}
+
+.req-item-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.req-item-card-head h4 {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.req-item-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 10px;
+}
+
+.req-span-2 {
+  grid-column: span 2;
+}
+
+.req-item-grid .entity-field {
+  gap: 4px;
+}
+
+.req-item-grid .entity-field label {
+  font-size: 0.75rem;
+  color: #516173;
+}
+
+.req-item-grid .entity-field input,
+.req-item-grid .entity-field select {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+}
+
+.req-item-grid .entity-field input[type="number"] {
+  text-align: center;
+}
+
+.req-item-remove {
+  min-height: 34px;
+  padding: 6px 11px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.req-justify {
+  max-width: 260px;
+}
+
+@media (max-width: 900px) {
+  .req-modal {
+    width: min(1300px, 99vw);
+  }
+
+  .req-top-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .req-item-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .req-span-2 {
+    grid-column: span 2;
+  }
+
+  .req-items-header {
+    margin-top: 14px;
+    padding: 10px;
+  }
+
+  .req-items-header h3 {
+    font-size: 0.88rem;
+  }
+
+  .req-item-grid .entity-field input,
+  .req-item-grid .entity-field select {
+    height: 36px;
+    font-size: 0.83rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .req-top-grid,
+  .req-item-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .req-span-2 {
+    grid-column: span 1;
+  }
+}

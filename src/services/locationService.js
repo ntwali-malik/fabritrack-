@@ -33,7 +33,7 @@ export function getLocationById(id) {
 
 /**
  * POST /api/locations - Create location.
- * @param {Object} location - Location fields (e.g. name, address, etc.)
+ * @param {Object} location - Location fields (e.g. name, address, asset?: { id }, etc.)
  * @returns {Promise<Object>} Created Location
  */
 export function createLocation(location) {
@@ -49,7 +49,7 @@ export function createLocation(location) {
 /**
  * PUT /api/locations/:id - Update location.
  * @param {string|number} id - Location id (Long)
- * @param {Object} location - Location fields to update
+ * @param {Object} location - Location fields to update (asset?: { id } or null)
  * @returns {Promise<Object>} Updated Location
  */
 export function updateLocation(id, location) {

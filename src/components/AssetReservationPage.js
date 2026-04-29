@@ -205,7 +205,6 @@ export default function AssetReservationPage({ user, onDataChange, onReservation
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Start</th>
                   <th>End</th>
                   <th>Purpose</th>
@@ -218,7 +217,6 @@ export default function AssetReservationPage({ user, onDataChange, onReservation
               <tbody>
                 {filteredList.map((row) => (
                   <tr key={row.id} className="t-row">
-                    <td className="td-id">{row.id}</td>
                     <td>{formatDate(row.startDate)}</td>
                     <td>{formatDate(row.endDate)}</td>
                     <td>{row.purpose || "—"}</td>
@@ -232,7 +230,7 @@ export default function AssetReservationPage({ user, onDataChange, onReservation
                     </td>
                   </tr>
                 ))}
-                {filteredList.length === 0 && !loading && <tr><td colSpan={8} className="entity-empty">No reservations yet.</td></tr>}
+                {filteredList.length === 0 && !loading && <tr><td colSpan={7} className="entity-empty">No reservations yet.</td></tr>}
               </tbody>
             </table>
           </div>

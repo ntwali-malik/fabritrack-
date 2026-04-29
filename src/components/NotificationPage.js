@@ -28,6 +28,7 @@ const notificationTypeClass = (type) => {
 };
 
 export default function NotificationPage({ user, onDataChange, searchQuery }) {
+  const isAdmin = String(user?.role || "").toUpperCase() === "ADMIN";
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +44,9 @@ export default function NotificationPage({ user, onDataChange, searchQuery }) {
   const load = () => {
     setLoading(true);
     setError("");
-    getNotifications({ unreadOnly })
+    const opts = { unreadOnly };
+    if (user?.id && !isAdmin) opts.userId = user.id;
+    getNotifications(opts)
       .then((data) => { setList(data || []); notify(data); })
       .catch((e) => setError(e.message || "Failed to load"))
       .finally(() => setLoading(false));
@@ -52,7 +55,7 @@ export default function NotificationPage({ user, onDataChange, searchQuery }) {
   useEffect(() => {
     notify(undefined);
     load();
-  }, [unreadOnly]);
+  }, [unreadOnly, user?.id, isAdmin]);
 
   const handleMarkAsRead = (id) => {
     setMarkingId(id);
@@ -139,7 +142,6 @@ export default function NotificationPage({ user, onDataChange, searchQuery }) {
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Title</th>
                   <th>Message</th>
                   <th>Type</th>
@@ -152,7 +154,6 @@ export default function NotificationPage({ user, onDataChange, searchQuery }) {
               <tbody>
                 {paginatedList.map((row) => (
                   <tr key={row.id} className="t-row">
-                    <td className="td-id">{row.id}</td>
                     <td>{row.title || "—"}</td>
                     <td style={{ maxWidth: 200 }}>{row.message || "—"}</td>
                     <td><span className={`entity-status notification-type notification-type--${notificationTypeClass(row.type)}`}>{row.type || "—"}</span></td>
@@ -178,7 +179,7 @@ export default function NotificationPage({ user, onDataChange, searchQuery }) {
                 ))}
                 {paginatedList.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={8} className="entity-empty">
+                    <td colSpan={7} className="entity-empty">
                       {unreadOnly ? "No unread notifications." : "No notifications yet."}
                     </td>
                   </tr>

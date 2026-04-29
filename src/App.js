@@ -3,7 +3,6 @@ import { setAuthToken } from './services/apiClient';
 import { getCurrentUser } from './services/userService';
 import './App.css';
 import AuthModal from './components/AuthModal';
-import AuthSessionTimeout from './components/AuthSessionTimeout';
 import Dashboard from './components/Dashboard';
 import AssetScanView from './components/AssetScanView';
 import LandingPage from './components/LandingPage';
@@ -104,9 +103,7 @@ function App() {
 
   return (
     <div className="App">
-      <AuthSessionTimeout onLogout={handleLogout}>
-        <Dashboard user={user} onLogout={handleLogout} />
-      </AuthSessionTimeout>
+      <Dashboard user={user} onLogout={handleLogout} />
     </div>
   );
 }

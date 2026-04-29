@@ -147,10 +147,9 @@ export default function AssetCategoryPage({ user, onCategoriesChange, searchQuer
           <p className="category-loading">Loading categories…</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="entity-data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Name</th>
                   <th>Description</th>
                   <th>Action</th>
@@ -159,7 +158,6 @@ export default function AssetCategoryPage({ user, onCategoriesChange, searchQuer
               <tbody>
                 {filteredCategories.map((cat) => (
                   <tr key={cat.id} className="t-row">
-                    <td className="td-id">{cat.id}</td>
                     <td>{cat.name || "—"}</td>
                     <td className="td-addr">{cat.description || "—"}</td>
                     <td onClick={(e) => e.stopPropagation()}>
@@ -178,7 +176,7 @@ export default function AssetCategoryPage({ user, onCategoriesChange, searchQuer
                 ))}
                 {filteredCategories.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={4} className="category-empty">
+                    <td colSpan={3} className="category-empty">
                       No categories yet. Click &quot;Add Category&quot; to create one.
                     </td>
                   </tr>
@@ -202,6 +200,9 @@ export default function AssetCategoryPage({ user, onCategoriesChange, searchQuer
             </div>
             <form onSubmit={handleSubmit} className="category-modal-body">
               {formError && <p className="category-error">{formError}</p>}
+              <div className="category-form-intro">
+                Fill in the details below to create a clear and reusable asset category.
+              </div>
               <div className="category-field">
                 <label htmlFor="category-name">Name *</label>
                 <input
@@ -221,6 +222,7 @@ export default function AssetCategoryPage({ user, onCategoriesChange, searchQuer
                   placeholder="Optional description"
                   rows={4}
                 />
+                <small className="category-field-hint">Short, specific descriptions make reports easier to read.</small>
               </div>
               <div className="category-modal-footer">
                 {editingCategory && (

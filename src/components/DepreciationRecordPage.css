@@ -1,0 +1,45 @@
+.shell[data-theme="dark"] .depr-page .entity-kpi-card,
+[data-theme="dark"] .depr-page .entity-kpi-card {
+  background: #111827;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.shell[data-theme="dark"] .depr-page .entity-kpi-label,
+[data-theme="dark"] .depr-page .entity-kpi-label {
+  color: #94a3b8;
+}
+
+.shell[data-theme="dark"] .depr-page .entity-kpi-value,
+[data-theme="dark"] .depr-page .entity-kpi-value {
+  color: #e5e7eb;
+}
+
+.shell[data-theme="dark"] .depr-page .entity-analytics-card,
+[data-theme="dark"] .depr-page .entity-analytics-card {
+  background: #111827;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.shell[data-theme="dark"] .depr-page .entity-analytics-header,
+[data-theme="dark"] .depr-page .entity-analytics-header {
+  border-bottom-color: rgba(148, 163, 184, 0.2);
+}
+
+.shell[data-theme="dark"] .depr-page .entity-analytics-title,
+[data-theme="dark"] .depr-page .entity-analytics-title {
+  color: #e5e7eb;
+}
+
+.shell[data-theme="dark"] .depr-page .entity-analytics-subtitle,
+[data-theme="dark"] .depr-page .entity-analytics-subtitle,
+.shell[data-theme="dark"] .depr-page .entity-analytics-legend-item,
+[data-theme="dark"] .depr-page .entity-analytics-legend-item,
+.shell[data-theme="dark"] .depr-page .entity-analytics-empty,
+[data-theme="dark"] .depr-page .entity-analytics-empty {
+  color: #94a3b8;
+}
+
+.shell[data-theme="dark"] .depr-page .entity-analytics-legend-value,
+[data-theme="dark"] .depr-page .entity-analytics-legend-value {
+  color: #e5e7eb;
+}

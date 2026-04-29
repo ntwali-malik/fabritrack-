@@ -40,7 +40,7 @@ const ACTION_OPTIONS = [
   { value: "LOGOUT", label: "Logout" },
 ];
 
-export default function AuditLogPage({ user, onDataChange }) {
+export default function AuditLogPage({ user, onDataChange, darkMode = false }) {
   const [list, setList] = useState([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -48,6 +48,7 @@ export default function AuditLogPage({ user, onDataChange }) {
   const [pageSize, setPageSize] = useState(PAGE_SIZE_DEFAULT);
   const [filterEntityName, setFilterEntityName] = useState("");
   const [filterAction, setFilterAction] = useState("");
+  const [filterUserName, setFilterUserName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
@@ -86,7 +87,6 @@ export default function AuditLogPage({ user, onDataChange }) {
   }, []);
 
   const handleRefresh = () => load(0);
-  const handleFilter = () => load(0);
   const handlePrev = () => { if (page > 0) load(page - 1); };
   const handleNext = () => { if (page < totalPages - 1) load(page + 1); };
   const handlePageSizeChange = (e) => {
@@ -96,11 +96,17 @@ export default function AuditLogPage({ user, onDataChange }) {
   };
 
   const rows = Array.isArray(list) ? list : [];
-  const startItem = totalElements === 0 ? 0 : page * pageSize + 1;
-  const endItem = Math.min((page + 1) * pageSize, totalElements);
+  const filteredRows = rows.filter((r) => {
+    const q = filterUserName.trim().toLowerCase();
+    if (!q) return true;
+    return userLabel(r.user).toLowerCase().includes(q);
+  });
+  const filteredTotal = filterUserName.trim() ? filteredRows.length : totalElements;
+  const startItem = filteredTotal === 0 ? 0 : (filterUserName.trim() ? 1 : page * pageSize + 1);
+  const endItem = filterUserName.trim() ? filteredRows.length : Math.min((page + 1) * pageSize, totalElements);
 
   return (
-    <div className="card audit-log-page">
+    <div className={`card audit-log-page${darkMode ? " audit-log-page--dark" : ""}`}>
       <div className="entity-toolbar audit-toolbar">
         <div className="audit-toolbar-filters">
           <input
@@ -125,9 +131,17 @@ export default function AuditLogPage({ user, onDataChange }) {
               <option key={opt.value || "all"} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          <button type="button" className="entity-add-btn entity-btn--secondary" onClick={handleFilter} disabled={loading}>
-            Filter
-          </button>
+          <input
+            type="text"
+            placeholder="User name"
+            value={filterUserName}
+            onChange={(e) => {
+              setFilterUserName(e.target.value);
+              if (page !== 0) setPage(0);
+            }}
+            className="audit-filter-input"
+            aria-label="Filter by user name"
+          />
         </div>
         <div className="audit-toolbar-actions">
           <button type="button" className="report-btn" onClick={() => setReportOpen(true)}>Report</button>
@@ -145,9 +159,7 @@ export default function AuditLogPage({ user, onDataChange }) {
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Entity</th>
-                  <th>Entity ID</th>
                   <th>Action</th>
                   <th>Details</th>
                   <th>Performed at</th>
@@ -155,11 +167,9 @@ export default function AuditLogPage({ user, onDataChange }) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {filteredRows.map((row) => (
                   <tr key={row.id} className="t-row">
-                    <td className="td-id">{row.id}</td>
                     <td>{row.entityName || "—"}</td>
-                    <td>{row.entityId || "—"}</td>
                     <td>
                       <span className={`entity-status audit-action ${actionClass(row.action)}`}>
                         {row.action || "—"}
@@ -170,9 +180,9 @@ export default function AuditLogPage({ user, onDataChange }) {
                     <td>{userLabel(row.user)}</td>
                   </tr>
                 ))}
-                {rows.length === 0 && !loading && (
+                {filteredRows.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={7} className="entity-empty">
+                    <td colSpan={5} className="entity-empty">
                       No actions recorded yet.
                     </td>
                   </tr>
@@ -180,10 +190,10 @@ export default function AuditLogPage({ user, onDataChange }) {
               </tbody>
             </table>
           </div>
-          {totalElements > 0 && (
+          {filteredTotal > 0 && (
             <div className="audit-pagination">
               <span className="audit-page-info">
-                Showing <strong>{startItem}</strong>–<strong>{endItem}</strong> of <strong>{totalElements}</strong>
+                Showing <strong>{startItem}</strong>–<strong>{endItem}</strong> of <strong>{filteredTotal}</strong>
               </span>
               <div className="audit-page-controls">
                 <label className="audit-page-size-label">
@@ -193,20 +203,20 @@ export default function AuditLogPage({ user, onDataChange }) {
                     value={pageSize}
                     onChange={handlePageSizeChange}
                     aria-label="Items per page"
-                    disabled={loading}
+                    disabled={loading || Boolean(filterUserName.trim())}
                   >
                     {PAGE_SIZE_OPTIONS.map((size) => (
                       <option key={size} value={size}>{size}</option>
                     ))}
                   </select>
                 </label>
-                <button type="button" className="audit-page-btn" onClick={handlePrev} disabled={page <= 0 || loading}>
+                <button type="button" className="audit-page-btn" onClick={handlePrev} disabled={page <= 0 || loading || Boolean(filterUserName.trim())}>
                   Previous
                 </button>
                 <span className="audit-page-num">
-                  Page {page + 1} of {totalPages}
+                  Page {filterUserName.trim() ? 1 : page + 1} of {filterUserName.trim() ? 1 : totalPages}
                 </span>
-                <button type="button" className="audit-page-btn" onClick={handleNext} disabled={page >= totalPages - 1 || loading}>
+                <button type="button" className="audit-page-btn" onClick={handleNext} disabled={page >= totalPages - 1 || loading || Boolean(filterUserName.trim())}>
                   Next
                 </button>
               </div>
@@ -222,8 +232,8 @@ export default function AuditLogPage({ user, onDataChange }) {
         generatedAt={new Date().toISOString()}
         renderFilters={() => null}
         getReportData={() => ({
-          columns: [{ key: "id", label: "ID" }, { key: "entityName", label: "Entity" }, { key: "entityId", label: "Entity ID" }, { key: "action", label: "Action" }, { key: "details", label: "Details" }, { key: "performedAt", label: "Performed at" }, { key: "user", label: "User" }],
-          rows: rows.map((r) => ({ id: r.id, entityName: r.entityName || "—", entityId: r.entityId || "—", action: r.action || "—", details: r.details || "—", performedAt: formatDateTime(r.performedAt), user: userLabel(r.user) })),
+          columns: [{ key: "id", label: "ID" }, { key: "entityName", label: "Entity" }, { key: "action", label: "Action" }, { key: "details", label: "Details" }, { key: "performedAt", label: "Performed at" }, { key: "user", label: "User" }],
+          rows: filteredRows.map((r) => ({ id: r.id, entityName: r.entityName || "—", action: r.action || "—", details: r.details || "—", performedAt: formatDateTime(r.performedAt), user: userLabel(r.user) })),
         })}
       />
     </div>

@@ -191,3 +191,41 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Dark mode (driven by Dashboard toggle via class) */
+.audit-log-page.audit-log-page--dark {
+  background: var(--surface, #111827);
+  border-color: var(--border, rgba(148,163,184,0.2));
+}
+.audit-log-page.audit-log-page--dark .audit-filter-input,
+.audit-log-page.audit-log-page--dark .audit-filter-select,
+.audit-log-page.audit-log-page--dark .audit-page-size-select,
+.audit-log-page.audit-log-page--dark .audit-page-btn {
+  background: var(--surface2, #1f2937);
+  color: var(--ink2, #cbd5e1);
+  border-color: var(--border, rgba(148,163,184,0.22));
+}
+.audit-log-page.audit-log-page--dark .audit-filter-input::placeholder { color: var(--ink3, #94a3b8); }
+.audit-log-page.audit-log-page--dark .report-btn,
+.audit-log-page.audit-log-page--dark .entity-add-btn.entity-btn--secondary {
+  background: var(--surface2, #1f2937);
+  color: var(--ink2, #cbd5e1);
+  border-color: var(--border, rgba(148,163,184,0.22));
+}
+.audit-log-page.audit-log-page--dark .report-btn:hover,
+.audit-log-page.audit-log-page--dark .entity-add-btn.entity-btn--secondary:hover {
+  background: #334155;
+  color: #f1f5f9;
+}
+.audit-log-page.audit-log-page--dark .audit-pagination {
+  background: rgba(15,23,42,0.45);
+  border-top-color: var(--border, rgba(148,163,184,0.22));
+}
+.audit-log-page.audit-log-page--dark .audit-page-info,
+.audit-log-page.audit-log-page--dark .audit-page-num,
+.audit-log-page.audit-log-page--dark .audit-page-size-label {
+  color: var(--ink3, #94a3b8);
+}
+.audit-log-page.audit-log-page--dark .audit-page-info strong {
+  color: var(--ink, #e5e7eb);
+}

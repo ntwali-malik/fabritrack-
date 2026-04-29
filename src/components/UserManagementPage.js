@@ -25,6 +25,7 @@ const emptyForm = () => ({
 const ROLE_OPTIONS = [
   { value: "ADMIN", label: "Admin" },
   { value: "IT", label: "IT" },
+  { value: "TECHNICIAN", label: "Technician" },
   { value: "FINANCE", label: "Finance" },
   { value: "SECURITY", label: "Security" },
 ];
@@ -216,7 +217,6 @@ export default function UserManagementPage({ user, searchQuery }) {
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Name</th>
                   <th>Email</th>
                   <th>Role</th>
@@ -228,7 +228,6 @@ export default function UserManagementPage({ user, searchQuery }) {
               <tbody>
                 {filteredUsers.map((u) => (
                   <tr key={u.id} className="t-row">
-                    <td className="td-id">{u.id}</td>
                     <td>{userDisplayName(u)}</td>
                     <td>{u.email || "—"}</td>
                     <td>{roleLabel(u.role)}</td>
@@ -254,7 +253,7 @@ export default function UserManagementPage({ user, searchQuery }) {
                 ))}
                 {filteredUsers.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={7} className="user-empty">
+                    <td colSpan={6} className="user-empty">
                       No users found.
                     </td>
                   </tr>
